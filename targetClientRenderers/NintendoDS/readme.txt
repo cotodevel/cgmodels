@@ -1,0 +1,1 @@
+Models exported by DisplayMan, many thanks to DEElekgolo (https://gbatemp.net/threads/displayman.291517/) which emits a displaylist the NDS GPU understands natively
