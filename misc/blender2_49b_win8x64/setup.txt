@@ -1,0 +1,16 @@
+1)
+Install the dependencies in this folder.
+
+2)
+head to repo:
+
+https://bitbucket.org/Coto88/blender-nds-exporter/src/master/
+
+grab file nds_3d_export.py and copy it into:
+
+(Win 8 x64)
+C:\Users\<User name>\AppData\Roaming\Blender Foundation\Blender\.blender\scripts
+
+3)
+The option Export > Nintendo DS CallList should appear in Blender. Export a model (haven't tried textures) into .h header file: Normals, C-Style File
+And then must be fed into the glCallList(u32* imported3DModel);
