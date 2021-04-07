@@ -44,8 +44,8 @@ USA
 #include "VideoGL.h"
 #include "videoTGDS.h"
 
-#include "Suzanne.h"
-#include "cafe.h"
+#include "Cube.h"	//Mesh Generated from Blender 2.49b
+#include "Texture_Cube.h"	//Textures of it
 
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
 		
 		glGenTextures( 1, &cafe_texid );
 		glBindTexture( 0, cafe_texid );
-		glTexImage2D( 0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, GL_TEXTURE_WRAP_S|GL_TEXTURE_WRAP_T|TEXGEN_NORMAL, (u8*)cafe );
+		glTexImage2D( 0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, GL_TEXTURE_WRAP_S|GL_TEXTURE_WRAP_T|TEXGEN_NORMAL, (u8*)Texture_CubeBitmap );
 		
 		//any floating point gl call is being converted to fixed prior to being implemented
 		glMatrixMode(GL_PROJECTION);
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
 		//rotateX -= pen_delta[1];
 		
 		glBindTexture( 0, cafe_texid );
-		glCallList((u32*)&Suzanne);
+		glCallList((u32*)&Cube);
 		
 		glFlush();
 		if(keys & KEY_START) break;
