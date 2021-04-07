@@ -1,6 +1,6 @@
 ![ToolchainGenericDS](img/TGDS-Logo.png)
 
-This is the Toolchain Generic EnvMapping project:
+This is the Toolchain Generic TexturedBlenderModelNDSRender project:
 
 Compile Toolchain: To compile this project you will need to follow the steps at https://bitbucket.org/Coto88/toolchaingenericds : Then simply extract the project somewhere.
 
@@ -9,7 +9,13 @@ Compile this project: Open msys, through msys commands head to the directory you
 After compiling, run the project in NDS.
 
 Project Specific description: 
-Dovoto's 3D Environment Mapping example. Original source: Env_Mapping.zip
+Render of 3D Blender 2.49b textured models into native DS CallList format (mesh + textures exported automatically).
+
+Setup:
+1)
+https://bitbucket.org/Coto88/cgmodels/src/master/misc/blender2_49b_win8x64/
+2)
+https://bitbucket.org/Coto88/blender-nds-exporter 
 
 /release folder has the latest binary precompiled for your convenience.
 
