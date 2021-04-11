@@ -254,7 +254,7 @@ int main(int argc, char **argv) __attribute__ ((optnone)) {
 	/*			TGDS 1.6 Standard ARM9 Init code end	*/
 	
 	//gl start
-	float camDist = 0.3*4;
+	float camDist = 0.1*4;
 	float rotateX = 0.0;
 	float rotateY = 0.0;
 	int i;
@@ -296,7 +296,7 @@ int main(int argc, char **argv) __attribute__ ((optnone)) {
 		glLoadIdentity();
 		
 		gluLookAt(	0.0, 0.0, camDist,		//camera possition 
-				0.0, 0.0, 0.0,		//look at
+				0.0, -1.0, 4.0,		//look at
 				0.0, 1.0, 0.0);		//up
 		
 		glTranslatef32(0, 0, 0.0);
@@ -319,29 +319,11 @@ int main(int argc, char **argv) __attribute__ ((optnone)) {
 		if( keys & KEY_B ) camDist += 0.1;
 		
 		glBindTexture( 0, textureID );
+		glRotateX(-90.0);	//Because OBJ Axis is 90º inverted...
+		glRotateY(45.0);	
 		glCallList((u32*)&Cube);
 		glFlush();
 		glPopMatrix(1);
 	}
 	
-	/*
-	while (1){
-		scanKeys();
-		if (keysDown() & KEY_SELECT){
-			menuShow();
-			scanKeys();
-			while(keysDown() & KEY_SELECT){
-				scanKeys();
-			}
-		}
-		
-		if (keysDown() & KEY_START){
-			menuShow();
-			scanKeys();
-			while(keysDown() & KEY_START){
-				scanKeys();
-			}
-		}
-	}
-	*/
 }

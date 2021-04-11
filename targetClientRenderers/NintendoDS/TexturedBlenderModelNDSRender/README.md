@@ -9,13 +9,22 @@ Compile this project: Open msys, through msys commands head to the directory you
 After compiling, run the project in NDS.
 
 Project Specific description: 
-Render of 3D Blender 2.49b textured models into native DS CallList format (mesh + textures exported automatically).
+3D model renderer of textured models read from native NDS CallLists (Format: model.H + model.PCX Texture)
+
+Blender 2.49b workflow to export a textured 3D object:
+Source model format (like .blender) -> export to OBJ -> load textures -> NDS CallList export (.H + .PCX Texture)
 
 Setup:
 1)
 https://bitbucket.org/Coto88/cgmodels/src/master/misc/blender2_49b_win8x64/
 2)
 https://bitbucket.org/Coto88/blender-nds-exporter 
+3)
+Build TGDS 
+https://bitbucket.org/Coto88/newlib-nds
+4)
+Build this TGDS Project
+make clean -> make
 
 /release folder has the latest binary precompiled for your convenience.
 

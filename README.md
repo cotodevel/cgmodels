@@ -1,4 +1,9 @@
+Textured Cube made in Blender 2.49b then exported as .H NDS CallList + .PCX Paletted Texture 
 ![ToolchainGenericDS](img/blender-nds-example.png)
+--
+Textured OBJ imported on Blender 2.49b then exported as .H NDS CallList + .PCX Paletted Texture 
+![ToolchainGenericDS](img/NDSmodel2.png)
+
 
 3D Models exported from Blender and/or other 3D modelling tools into different target platforms such as NintendoDS.
 
