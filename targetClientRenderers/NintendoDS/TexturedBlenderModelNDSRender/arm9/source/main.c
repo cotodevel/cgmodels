@@ -235,7 +235,7 @@ int main(int argc, char **argv) __attribute__ ((optnone)) {
 	GUI_clear();
 	
 	bool isCustomTGDSMalloc = true;
-	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc));
+	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc, TGDSDLDI_ARM7_ADDRESS));
 	sint32 fwlanguage = (sint32)getLanguage();
 	
 	int ret=FS_init();
