@@ -68,138 +68,12 @@ USA
 #include "TGDSMemoryAllocator.h"
 #include "VideoGL.h"
 #include "videoTGDS.h"
+#include "imagepcx.h"
 
 #include "Cube.h"	//Mesh Generated from Blender 2.49b
 #include "Texture_Cube.h"	//Textures of it
 
-int textureID=0;
-//---------------------------------------------------------------------------------
-void imageDestroy(sImage* img) {
-//---------------------------------------------------------------------------------
-	if(img->image.data8) TGDSARM9Free (img->image.data8);
-	if(img->palette && img->bpp == 8) TGDSARM9Free (img->palette);
-}
-
-//---------------------------------------------------------------------------------
-void image8to16(sImage* img) {
-//---------------------------------------------------------------------------------
-	int i;
-	u16* temp = (u16*)TGDSARM9Malloc(img->height*img->width*2);
-
-	for(i = 0; i < img->height * img->width; i++)
-		temp[i] = img->palette[img->image.data8[i]] | (1<<15);
-
-	TGDSARM9Free (img->image.data8);
-	TGDSARM9Free (img->palette);
-
-	img->palette = NULL;
-
-	img->bpp = 16;
-	img->image.data16 = temp;
-}
-
-//---------------------------------------------------------------------------------
-int loadPCX(const unsigned char* pcx, sImage* image) {
-//---------------------------------------------------------------------------------
-	//struct rgb {unsigned char b,g,r;};
-	RGB_24* pal;
-	
-	PCXHeader* hdr = (PCXHeader*) pcx;
-
-	pcx += sizeof(PCXHeader);
-	
-	unsigned char c;
-	int size;
-	int count;
-	int run;
-	int i;
-	int iy;
-	int width, height;
-	int scansize = hdr->bytesPerLine;
-	unsigned char *scanline;
-
-
-	width = image->width  = hdr->xmax - hdr->xmin + 1 ;
-	height = image->height = hdr->ymax - hdr->ymin + 1;
-
-	size = image->width * image->height;
-
-	if(hdr->bitsPerPixel != 8)
-		return 0;
-	
-	scanline = image->image.data8 = (unsigned char*)TGDSARM9Malloc(size);
-	image->palette = (unsigned short*)TGDSARM9Malloc(256 * 2);
-
-	count = 0;
-
-	for(iy = 0; iy < height; iy++) {
-		count = 0;
-		while(count < scansize)
-		{
-			c = *pcx++;
-			
-			if(c < 192) {
-				scanline[count++] = c;
-			} else {
-				run = c - 192;
-			
-				c = *pcx++;
-				
-				for(i = 0; i < run && count < scansize; i++)
-					scanline[count++] = c;
-			}
-		}
-		scanline += width;
-	}
-
-	//check for the palette marker.
-	//I have seen PCX files without this, but the docs don't seem ambiguous--it must be here.
-	//Anyway, the support among other apps is poor, so we're going to reject it.
-	if(*pcx != 0x0C)
-	{
-		TGDSARM9Free(image->image.data8);
-		image->image.data8 = 0;
-		TGDSARM9Free(image->palette);
-		image->palette = 0;
-		return 0;
-	}
-
-	pcx++;
-
-	pal = (RGB_24*)(pcx);
-
-	image->bpp = 8;
-
-	for(i = 0; i < 256; i++)
-	{
-		u8 r = (pal[i].r + 4 > 255) ? 255 : (pal[i].r + 4);
-		u8 g = (pal[i].g + 4 > 255) ? 255 : (pal[i].g + 4);
-		u8 b = (pal[i].b + 4 > 255) ? 255 : (pal[i].b + 4);
-		image->palette[i] = RGB15(r >> 3 , g >> 3 , b >> 3) ;
-	}
-	return 1;
-}
-
-int LoadGLTextures()									// Load PCX files And Convert To Textures
-{
-	sImage pcx;
-
-	//load our texture
-	loadPCX((u8*)Texture_Cube, &pcx);
-	image8to16(&pcx);
-
-	//DS supports no filtering of anykind so no need for more than one texture
-	glGenTextures(1, &textureID);
-	glBindTexture(0, textureID);
-	glTexImage2D(0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, TEXGEN_TEXCOORD, pcx.image.data8);
-
-	imageDestroy(&pcx);
-
-	return 0;
-}
-
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
-
 void menuShow(){
 	clrscr();
 	printf("                              ");
@@ -212,6 +86,11 @@ void menuShow(){
 	printarm7DebugBuffer();
 }
 
+//TGDS Soundstreaming API
+int internalCodecType = SRC_NONE; //Returns current sound stream format: WAV, ADPCM or NONE
+struct fd * _FileHandleVideo = NULL; 
+struct fd * _FileHandleAudio = NULL;
+
 bool stopSoundStreamUser(){
 	
 }
@@ -223,11 +102,11 @@ void closeSoundUser(){
 //ToolchainGenericDS-LinkedModule User implementation: Called if TGDS-LinkedModule fails to reload ARM9.bin from DLDI.
 char args[8][MAX_TGDSFILENAME_LENGTH];
 char *argvs[8];
-int TGDSProjectReturnFromLinkedModule() __attribute__ ((optnone)) {
+int TGDSProjectReturnFromLinkedModule() {
 	return -1;
 }
 
-int main(int argc, char **argv) __attribute__ ((optnone)) {
+int main(int argc, char **argv) {
 	
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
 	bool isTGDSCustomConsole = true;	//set default console or custom console: true
@@ -272,7 +151,7 @@ int main(int argc, char **argv) __attribute__ ((optnone)) {
 		
 		glReset();
 		
-		LoadGLTextures();
+		LoadGLTextures((u8*)&Texture_Cube);
 		
 		glEnable(GL_ANTIALIAS);
 		glEnable(GL_TEXTURE_2D);
