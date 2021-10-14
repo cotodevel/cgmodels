@@ -106,6 +106,89 @@ int TGDSProjectReturnFromLinkedModule() {
 	return -1;
 }
 
+
+void ReSizeGLScene(int width, int height){		// Resize And Initialize The GL Window
+	if (height==0)										// Prevent A Divide By Zero By
+	{
+		height=1;										// Making Height Equal One
+	}
+
+	glViewPort(0, 0, width, height);						// Reset The Current Viewport
+	
+	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
+	glLoadIdentity();									// Reset The Projection Matrix
+
+	// Calculate The Aspect Ratio Of The Window
+	gluPerspective(45.0f,(float)width/(float)height,0.1f,100.0f);
+
+	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
+	glLoadIdentity();									// Reset The Modelview Matrix
+}
+
+//true: pen touch
+//false: no tsc activity
+static bool get_pen_delta( int *dx, int *dy ){
+	static int prev_pen[2] = { 0x7FFFFFFF, 0x7FFFFFFF };
+	
+	// TSC Test.
+	struct XYTscPos touch;
+	XYReadScrPosUser(&touch);
+	
+	if( (touch.touchYpx == 0) && (touch.touchXpx == 0) ){
+		prev_pen[0] = prev_pen[1] = 0x7FFFFFFF;
+		*dx = *dy = 0;
+		return false;
+	}
+	else{
+		if( prev_pen[0] != 0x7FFFFFFF ){
+			*dx = (prev_pen[0] - touch.touchXpx);
+			*dy = (prev_pen[1] - touch.touchYpx);
+		}
+		prev_pen[0] = touch.touchXpx;
+		prev_pen[1] = touch.touchYpx;
+	}
+	return true;
+}
+
+#define NAN 0x80000000
+#define BIAS 127
+#define K 8
+#define N 23
+typedef unsigned float_bits;
+/* Compute (int) f.
+ * If conversion causes overflow or f is NaN, return 0x80000000
+ */
+static inline int float_f2i(float_bits f) {
+  unsigned s = f >> (K + N);
+  unsigned exp = f >> N & 0xFF;
+  unsigned frac = f & 0x7FFFFF;
+  
+  /* Denormalized values round to 0 */
+  if (exp == 0)
+    return 0;
+  /* f is NaN */
+  if (exp == 0xFF)
+    return NAN;
+  /* Normalized values */
+  int x;
+  int E = exp - BIAS;
+  /* Normalized value less than 0, return 0 */
+  if (E < 0)
+    return 0;
+  /* Overflow condition */
+  if (E > 30)
+    return NAN;
+  x = 1 << E;
+  if (E < N)
+    x |= frac >> (N - E);
+  else
+    x |= frac << (E - N);
+  /* Negative values */
+  if (s == 1)
+    x = ~x + 1;
+  return x;  
+}
+
 int main(int argc, char **argv) {
 	
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
@@ -133,9 +216,12 @@ int main(int argc, char **argv) {
 	/*			TGDS 1.6 Standard ARM9 Init code end	*/
 	
 	//gl start
-	float camDist = 0.1*4;
+	float camDist = 0.3*4;
 	float rotateX = 0.0;
 	float rotateY = 0.0;
+	
+	float distX = 0.0;
+	float distY = 0.0;
 	int i;
 	{
 		setOrientation(ORIENTATION_0, true);
@@ -144,8 +230,7 @@ int main(int argc, char **argv) {
 		SETDISPCNT_MAIN(MODE_0_3D);
 		
 		//this should work the same as the normal gl call
-		glViewPort(0,0,255,191);
-		
+		glViewPort(0,0,255,191);	
 		glClearColor(0,0,0);
 		glClearDepth(0x7FFF);
 		
@@ -164,43 +249,48 @@ int main(int argc, char **argv) {
 		
 	}
 	//gl end
+	//ReSizeGLScene(240, 160);
 	
 	menuShow();
 	
-	while(1) {
+	int objects = 0;
+	float lookat = 6.0;
+	int xloop=0,yloop=0;
+	int xrot=0,yrot=0;
+	
+	while(1) {		
+		int pen_delta[2];
+		bool isTSCActive = get_pen_delta( &pen_delta[0], &pen_delta[1] );
+		distY -= (pen_delta[0]);
+		distX -= (pen_delta[1] );
 		
-		glPushMatrix();
-		
+		lookat = -0.65;
+		glPushMatrix();	
 		glMatrixMode(GL_POSITION);
-		glLoadIdentity();
+		glBindTexture( 0, textureID);
 		
-		gluLookAt(	0.0, 0.0, camDist,		//camera possition 
-				0.0, -1.0, 4.0,		//look at
-				0.0, 1.0, 0.0);		//up
+		for (yloop=1;yloop<6;yloop++){
+			glLoadIdentity();							// Reset The View		
+			gluLookAt(	-0.1, -0.1, lookat,		//camera possition 
+			1.0, -distX, -distY,		//look at
+			0.0, 1.0, 0.0);		//up
+			
+			glMaterialf(GL_EMISSION, RGB15(31,31,31));
+			glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
+			
+			glTranslatef32(0, 0, 0.0);
+			//glRotate(xrot,1.0f,0.0f,0.0f); //glRotatef -> glRotate
+			//glRotate(yrot,0.0f,1.0f,0.0f); //glRotatef -> glRotate
+			
+			glRotateX(-90.0);	//Because OBJ Axis is 90º inverted...
+			glRotateY(45.0);
+			//glColor3fv(boxcol[yloop-1]);
+			glCallList((u32*)&Cube);
+			//glColor3fv(topcol[yloop-1]);
+			//glCallList(top);
+			lookat+=0.3;
+		}
 		
-		glTranslatef32(0, 0, 0.0);
-		glRotateXi(rotateX);
-		glRotateYi(rotateY);
-
-		glMaterialf(GL_EMISSION, RGB15(31,31,31));
-
-		glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
-
-		scanKeys();
-		u32 keys = keysHeld();
-
-		if( keys & KEY_UP ) rotateX += 3;
-		if( keys & KEY_DOWN ) rotateX -= 3;
-		if( keys & KEY_LEFT ) rotateY += 3;
-		if( keys & KEY_RIGHT ) rotateY -= 3;
-		
-		if( keys & KEY_A ) camDist -= 0.1;
-		if( keys & KEY_B ) camDist += 0.1;
-		
-		glBindTexture( 0, textureID );
-		glRotateX(-90.0);	//Because OBJ Axis is 90º inverted...
-		glRotateY(45.0);	
-		glCallList((u32*)&Cube);
 		glFlush();
 		glPopMatrix(1);
 	}
