@@ -46,6 +46,7 @@ extern int main(int argc, char **argv);
 extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 extern bool fillNDSLoaderContext(char * filename);
 extern struct FileClassList * thisFileList;
+extern void ReSizeGLScene(int width, int height);
 
 #ifdef __cplusplus
 }
