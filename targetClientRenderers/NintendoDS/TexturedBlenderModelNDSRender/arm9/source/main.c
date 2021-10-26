@@ -70,8 +70,11 @@ USA
 #include "videoTGDS.h"
 #include "imagepcx.h"
 
-#include "Cube.h"	//Mesh Generated from Blender 2.49b
-#include "Texture_Cube.h"	//Textures of it
+
+#include "Cube.h"	//Meshes Generated from Blender 2.49b
+#include "Cellphone.h"
+#include "Texture_Cellphone.h"	//Textures of it
+#include "Texture_Cube.h"	
 
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 void menuShow(){
@@ -189,6 +192,8 @@ static inline int float_f2i(float_bits f) {
   return x;  
 }
 
+float boxMove = 0.0;
+
 int main(int argc, char **argv) {
 	
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
@@ -215,15 +220,15 @@ int main(int argc, char **argv) {
 	flush_dcache_all();
 	/*			TGDS 1.6 Standard ARM9 Init code end	*/
 	
-	//gl start
-	float camDist = 0.3*4;
-	float rotateX = 0.0;
-	float rotateY = 0.0;
+	menuShow();
 	
-	float distX = 0.0;
-	float distY = 0.0;
-	int i;
-	{
+	//gl start
+		float camDist = 0.3*4;
+		float rotateX = 0.0;
+		float rotateY = 0.0;
+		
+		float distX = 0.0;
+		float distY = 0.0;
 		setOrientation(ORIENTATION_0, true);
 		
 		//set mode 0, enable BG0 and set it to 3D
@@ -236,7 +241,17 @@ int main(int argc, char **argv) {
 		
 		glReset();
 		
-		LoadGLTextures((u8*)&Texture_Cube);
+		//Load 2 textures and map each one to a texture slot
+		u32 arrayOfTextures[2];
+		arrayOfTextures[0] = (u32)&Texture_Cube;
+		arrayOfTextures[1] = (u32)&Texture_Cellphone;
+		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
+		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 2);
+		
+		int i = 0;
+		for(i = 0; i < texturesInSlot; i++){
+			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
+		}
 		
 		glEnable(GL_ANTIALIAS);
 		glEnable(GL_TEXTURE_2D);
@@ -245,13 +260,9 @@ int main(int argc, char **argv) {
 		//any floating point gl call is being converted to fixed prior to being implemented
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		gluPerspective(35, 256.0 / 192.0, 0.1, 40);
-		
-	}
+		gluPerspective(35, 256.0 / 192.0, 0.1, 40);	
 	//gl end
 	//ReSizeGLScene(240, 160);
-	
-	menuShow();
 	
 	int objects = 0;
 	float lookat = 6.0;
@@ -267,27 +278,40 @@ int main(int argc, char **argv) {
 		lookat = -0.65;
 		glPushMatrix();	
 		glMatrixMode(GL_POSITION);
-		glBindTexture( 0, textureID);
 		
 		for (yloop=1;yloop<6;yloop++){
-			glLoadIdentity();							// Reset The View		
-			gluLookAt(	-0.1, -0.1, lookat,		//camera possition 
-			1.0, -distX, -distY,		//look at
-			0.0, 1.0, 0.0);		//up
 			
-			glMaterialf(GL_EMISSION, RGB15(31,31,31));
-			glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
-			
-			glTranslatef32(0, 0, 0.0);
-			//glRotate(xrot,1.0f,0.0f,0.0f); //glRotatef -> glRotate
-			//glRotate(yrot,0.0f,1.0f,0.0f); //glRotatef -> glRotate
-			
-			glRotateX(-90.0);	//Because OBJ Axis is 90º inverted...
-			glRotateY(45.0);
-			//glColor3fv(boxcol[yloop-1]);
-			glCallList((u32*)&Cube);
-			//glColor3fv(topcol[yloop-1]);
-			//glCallList(top);
+			if(yloop != 4){
+				glBindTexture( 0, textureArrayNDS[1]);
+				glLoadIdentity();							// Reset The View		
+				gluLookAt(	-0.1, -0.1, lookat,		//camera possition 
+				1.0, -distX, -distY,		//look at
+				0.0, 1.0, 0.0);		//up
+				
+				glMaterialf(GL_EMISSION, RGB15(31,31,31));
+				glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
+				
+				glTranslatef32(0, 0, 0.0);
+				glRotateX(-90.0);	//Because OBJ Axis is 90º inverted...
+				glRotateY(45.0);
+				glCallList((u32*)&Cellphone);
+			}
+			//render a Cube on the 4th object
+			else{
+				glBindTexture( 0, textureArrayNDS[0]);
+				glLoadIdentity();							// Reset The View		
+				gluLookAt(	-0.9, -0.9, (0.9) + lookat,		//camera possition 
+				-3.0, distX, distY,		//look at
+				14.0, 7.0, -14.0);		//up
+				
+				glMaterialf(GL_EMISSION, RGB15(31,31,31));
+				glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
+				
+				glTranslatef32(60.0, 60.0, 60.0);
+				glRotateX(-boxMove);	//Because OBJ Axis is 90º inverted...
+				glRotateY(boxMove);
+				glCallList((u32*)&Cube);
+			}
 			lookat+=0.3;
 		}
 		

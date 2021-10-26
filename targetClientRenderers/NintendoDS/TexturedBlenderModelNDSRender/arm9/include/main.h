@@ -48,6 +48,8 @@ extern bool fillNDSLoaderContext(char * filename);
 extern struct FileClassList * thisFileList;
 extern void ReSizeGLScene(int width, int height);
 
+extern float boxMove;
+
 #ifdef __cplusplus
 }
 #endif

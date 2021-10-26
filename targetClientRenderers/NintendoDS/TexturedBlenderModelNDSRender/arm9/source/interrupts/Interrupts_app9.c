@@ -73,14 +73,17 @@ void Timer3handlerUser(){
 __attribute__((section(".itcm")))
 #endif
 void HblankUser(){
-
+	
 }
 
 #ifdef ARM9
 __attribute__((section(".itcm")))
 #endif
 void VblankUser(){
-
+	boxMove+=0.3;
+	if(boxMove > 1000000000.0){
+		boxMove = 0.1;
+	}
 }
 
 #ifdef ARM9
