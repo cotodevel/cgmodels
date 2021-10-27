@@ -279,8 +279,29 @@ int main(int argc, char **argv) {
 		glPushMatrix();	
 		glMatrixMode(GL_POSITION);
 		
-		for (yloop=1;yloop<6;yloop++){
+		//NDS GX server does not know this but OpenGL states:
+		//Steps in the Initialization Process
+			//Name the display list : GLuint glGenLists(GLsizei range)
+			//Create the display list:
 			
+			//The Functions:
+			//void glNewList(GLuint name, GLenum mode) specifies the start of list with index name
+			//void glEndList() specifies the end
+				//Modes:
+				//GL_COMPILE or GL_COMPILE_AND_EXECUTE
+				
+			//Example: Create the display list
+			  //glNewList(teapot, GL_COMPILE);
+			  //glutSolidTeapot(0.2);
+			  //glEndList();
+		
+		//Steps in the Rendering Process
+			//Transform, set material properties, etc (Use the display list)
+			//Finally, Execute the display list
+
+		
+		// Use the display list
+		for (yloop=1;yloop<6;yloop++){
 			if(yloop != 4){
 				glBindTexture( 0, textureArrayNDS[1]);
 				glLoadIdentity();							// Reset The View		
@@ -294,6 +315,8 @@ int main(int argc, char **argv) {
 				glTranslatef32(0, 0, 0.0);
 				glRotateX(-90.0);	//Because OBJ Axis is 90º inverted...
 				glRotateY(45.0);
+				
+				// Execute the display list
 				glCallList((u32*)&Cellphone);
 			}
 			//render a Cube on the 4th object
@@ -310,6 +333,8 @@ int main(int argc, char **argv) {
 				glTranslatef32(60.0, 60.0, 60.0);
 				glRotateX(-boxMove);	//Because OBJ Axis is 90º inverted...
 				glRotateY(boxMove);
+				
+				// Execute the display list
 				glCallList((u32*)&Cube);
 			}
 			lookat+=0.3;
