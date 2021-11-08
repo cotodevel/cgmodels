@@ -116,7 +116,7 @@ typedef struct sIPCSharedTGDSSpecific{
 
 #ifdef ARM9
 static inline void initGDBSession(){
-	SendFIFOWords((u32)REQ_GBD_ARM7);
+	SendFIFOWords((u32)REQ_GBD_ARM7, 0xFF);
 }
 #endif
 

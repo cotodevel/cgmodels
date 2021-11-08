@@ -132,21 +132,21 @@ static bool get_pen_delta( int *dx, int *dy ){
 	static int prev_pen[2] = { 0x7FFFFFFF, 0x7FFFFFFF };
 	
 	// TSC Test.
-	struct XYTscPos touch;
+	struct touchPosition touch;
 	XYReadScrPosUser(&touch);
 	
-	if( (touch.touchYpx == 0) && (touch.touchXpx == 0) ){
+	if( (touch.px == 0) && (touch.py == 0) ){
 		prev_pen[0] = prev_pen[1] = 0x7FFFFFFF;
 		*dx = *dy = 0;
 		return false;
 	}
 	else{
 		if( prev_pen[0] != 0x7FFFFFFF ){
-			*dx = (prev_pen[0] - touch.touchXpx);
-			*dy = (prev_pen[1] - touch.touchYpx);
+			*dx = (prev_pen[0] - touch.px);
+			*dy = (prev_pen[1] - touch.py);
 		}
-		prev_pen[0] = touch.touchXpx;
-		prev_pen[1] = touch.touchYpx;
+		prev_pen[0] = touch.px;
+		prev_pen[1] = touch.py;
 	}
 	return true;
 }
@@ -212,7 +212,6 @@ int main(int argc, char **argv) {
 	{
 		printf("FS Init error.");
 	}
-	switch_dswnifi_mode(dswifi_idlemode);
 	asm("mcr	p15, 0, r0, c7, c10, 4");
 	flush_icache_all();
 	flush_dcache_all();

@@ -113,7 +113,6 @@ int main(int argc, char **argv) {
 	{
 		printf("FS Init error.");
 	}
-	switch_dswnifi_mode(dswifi_idlemode);
 	asm("mcr	p15, 0, r0, c7, c10, 4");
 	flush_icache_all();
 	flush_dcache_all();
