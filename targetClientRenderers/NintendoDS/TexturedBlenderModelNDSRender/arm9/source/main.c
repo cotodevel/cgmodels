@@ -56,7 +56,6 @@ USA
 #include "dldi.h"
 #include "xmem.h"
 #include "dmaTGDS.h"
-#include "eventsTGDS.h"
 #include "timerTGDS.h"
 #include "nds_cp15_misc.h"
 #include "fileBrowse.h"
@@ -86,7 +85,6 @@ void menuShow(){
 	
 	printf("Available heap memory: %d", getMaxRam());
 	printf("Button (Select): this menu. ");
-	printarm7DebugBuffer();
 }
 
 //TGDS Soundstreaming API
