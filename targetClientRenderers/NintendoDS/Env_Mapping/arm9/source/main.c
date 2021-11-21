@@ -133,7 +133,6 @@ int main(int argc, char **argv) {
 	float camDist = 0.3*4;
 	int rotateX = 0;
 	int rotateY = 0;
-	int i;
 	int cafe_texid;
 	{
 		setOrientation(ORIENTATION_0, true);

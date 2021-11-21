@@ -256,7 +256,6 @@ int main(int argc, char **argv) {
 		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
 		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 2);
 		
-		int i = 0;
 		for(i = 0; i < texturesInSlot; i++){
 			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
 		}
