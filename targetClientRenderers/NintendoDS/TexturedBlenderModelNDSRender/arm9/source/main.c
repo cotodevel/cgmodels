@@ -324,7 +324,7 @@ int main(int argc, char **argv) {
 				glRotateY(45.0);
 				
 				// Execute the display list
-				glCallList((u32*)&Cellphone);
+				glCallListGX((u32*)&Cellphone);
 			}
 			//render a Cube on the 4th object
 			else{
@@ -342,7 +342,7 @@ int main(int argc, char **argv) {
 				glRotateY(boxMove);
 				
 				// Execute the display list
-				glCallList((u32*)&Cube);
+				glCallListGX((u32*)&Cube);
 			}
 			lookat+=0.3;
 		}

@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 		//rotateX -= pen_delta[1];
 		
 		glBindTexture( 0, cafe_texid );
-		glCallList((u32*)&Suzanne);
+		glCallListGX((u32*)&Suzanne);
 		
 		glFlush();
 		if(keys & KEY_START) break;
