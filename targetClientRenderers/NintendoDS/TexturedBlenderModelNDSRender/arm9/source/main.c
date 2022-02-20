@@ -219,10 +219,10 @@ int main(int argc, char **argv) {
 	{
 		printf("FS Init ok.");
 	}
-	else if(ret == -1)
-	{
-		printf("FS Init error.");
+	else{
+		printf("FS Init error: %d", ret);
 	}
+	
 	asm("mcr	p15, 0, r0, c7, c10, 4");
 	flush_icache_all();
 	flush_dcache_all();
@@ -256,7 +256,6 @@ int main(int argc, char **argv) {
 		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
 		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 2);
 		
-		int i = 0;
 		for(i = 0; i < texturesInSlot; i++){
 			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
 		}
@@ -325,7 +324,7 @@ int main(int argc, char **argv) {
 				glRotateY(45.0);
 				
 				// Execute the display list
-				glCallList((u32*)&Cellphone);
+				glCallListGX((u32*)&Cellphone);
 			}
 			//render a Cube on the 4th object
 			else{
@@ -343,7 +342,7 @@ int main(int argc, char **argv) {
 				glRotateY(boxMove);
 				
 				// Execute the display list
-				glCallList((u32*)&Cube);
+				glCallListGX((u32*)&Cube);
 			}
 			lookat+=0.3;
 		}

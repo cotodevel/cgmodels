@@ -120,10 +120,10 @@ int main(int argc, char **argv) {
 	{
 		printf("FS Init ok.");
 	}
-	else if(ret == -1)
-	{
-		printf("FS Init error.");
+	else{
+		printf("FS Init error: %d", ret);
 	}
+	
 	asm("mcr	p15, 0, r0, c7, c10, 4");
 	flush_icache_all();
 	flush_dcache_all();
@@ -133,7 +133,6 @@ int main(int argc, char **argv) {
 	float camDist = 0.3*4;
 	int rotateX = 0;
 	int rotateY = 0;
-	int i;
 	int cafe_texid;
 	{
 		setOrientation(ORIENTATION_0, true);
@@ -208,7 +207,7 @@ int main(int argc, char **argv) {
 		//rotateX -= pen_delta[1];
 		
 		glBindTexture( 0, cafe_texid );
-		glCallList((u32*)&Suzanne);
+		glCallListGX((u32*)&Suzanne);
 		
 		glFlush();
 		if(keys & KEY_START) break;
