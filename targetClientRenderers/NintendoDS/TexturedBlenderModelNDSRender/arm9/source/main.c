@@ -114,7 +114,7 @@ void ReSizeGLScene(int width, int height){		// Resize And Initialize The GL Wind
 		height=1;										// Making Height Equal One
 	}
 
-	glViewPort(0, 0, width, height);						// Reset The Current Viewport
+	glViewport(0, 0, width, height);						// Reset The Current Viewport
 	
 	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
 	glLoadIdentity();									// Reset The Projection Matrix
@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
 		SETDISPCNT_MAIN(MODE_0_3D);
 		
 		//this should work the same as the normal gl call
-		glViewPort(0,0,255,191);	
+		glViewport(0,0,255,191);	
 		glClearColor(0,0,0);
 		glClearDepth(0x7FFF);
 		
