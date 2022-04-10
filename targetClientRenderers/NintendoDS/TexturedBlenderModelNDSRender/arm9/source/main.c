@@ -100,13 +100,8 @@ void closeSoundUser(){
 	//Stubbed. Gets called when closing an audiostream of a custom audio decoder
 }
 
-//ToolchainGenericDS-LinkedModule User implementation: Called if TGDS-LinkedModule fails to reload ARM9.bin from DLDI.
 char args[8][MAX_TGDSFILENAME_LENGTH];
 char *argvs[8];
-int TGDSProjectReturnFromLinkedModule() {
-	return -1;
-}
-
 
 void ReSizeGLScene(int width, int height){		// Resize And Initialize The GL Window
 	if (height==0)										// Prevent A Divide By Zero By
