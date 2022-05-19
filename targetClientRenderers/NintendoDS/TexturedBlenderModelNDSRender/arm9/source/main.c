@@ -74,6 +74,7 @@ USA
 #include "Cellphone.h"
 #include "Texture_Cellphone.h"	//Textures of it
 #include "Texture_Cube.h"	
+#include "Texture_Cube_Exported.h"	//exported from BMP24 into native Texture format
 
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 void menuShow(){
@@ -246,7 +247,7 @@ int main(int argc, char **argv) {
 		
 		//Load 2 textures and map each one to a texture slot
 		u32 arrayOfTextures[2];
-		arrayOfTextures[0] = (u32)&Texture_Cube;
+		arrayOfTextures[0] = (u32)&Texture_Cube_Exported;
 		arrayOfTextures[1] = (u32)&Texture_Cellphone;
 		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
 		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 2);
