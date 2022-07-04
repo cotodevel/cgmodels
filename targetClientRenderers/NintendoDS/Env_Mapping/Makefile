@@ -31,7 +31,8 @@ export TGDSPROJECTNAME = Env_Mapping
 export EXECUTABLE_FNAME = $(TGDSPROJECTNAME).nds
 export EXECUTABLE_VERSION_HEADER =	0.1
 export EXECUTABLE_VERSION =	"$(EXECUTABLE_VERSION_HEADER)"
-export TGDSPKG_TARGET_NAME := /
+export TGDSPKG_TARGET_PATH := '//'
+export TGDSREMOTEBOOTER_SERVER_IP_ADDR := '192.168.43.22'
 #The ndstool I use requires to have the elf section removed, so these rules create elf headerless- binaries.
 export BINSTRIP_RULE_7 =	arm7.bin
 export BINSTRIP_RULE_9 =	arm9.bin
@@ -89,6 +90,7 @@ export DIRS_ARM9_HEADER = data/	\
 			../common/	\
 			../common/templateCode/source/	\
 			../common/templateCode/data/arm9/	\
+			build/	\
 			../$(PosIndCodeDIR_FILENAME)/$(DIR_ARM9)/include/
 # Build Target(s)	(both processors here)
 all: $(EXECUTABLE_FNAME)
@@ -116,7 +118,7 @@ endif
 $(EXECUTABLE_FNAME)	:	compile
 	-@echo 'ndstool begin'
 	$(NDSTOOL)	-v	-c $@	-7  $(CURDIR)/arm7/$(BINSTRIP_RULE_7)	-e7  0x03800000	-9 $(CURDIR)/arm9/$(BINSTRIP_RULE_9) -e9  0x02000000	-b	icon.bmp "ToolchainGenericDS SDK;$(TGDSPROJECTNAME) NDS Binary; "
-	$(NDSTOOL)	-c 	${@:.nds=.srl} -g "TGDS" "NN" "NDS.TinyFB" -b	icon.bmp "ToolchainGenericDS SDK;$(TGDSPROJECTNAME) TWL Binary;" -7 arm7/arm7-nonstripped_dsi.elf -9 arm9/arm9-nonstripped_dsi.elf
+	$(NDSTOOL)	-c 	${@:.nds=.srl} -g "TGDS" "NN" "NDS.TinyFB" -b	icon.bmp "ToolchainGenericDS SDK;$(TGDSPROJECTNAME) TWL Binary;" -7  $(CURDIR)/arm7/${BINSTRIP_RULE_7:.bin=_twl.bin}	-e7  0x03800000 -9 $(CURDIR)/arm9/${BINSTRIP_RULE_9:.bin=_twl.bin} -e9  0x02000000
 	-mv ${@:.nds=.srl}	/E
 	-@echo 'ndstool end: built: $@'
 	
@@ -149,8 +151,32 @@ commitChanges:
 	-@git commit -a	-m '$(COMMITMSG)'
 	-@git push origin HEAD
 
+#---------------------------------------------------------------------------------
+
+switchStable:
+	-@git checkout -f	'TGDS1.65'
+
+#---------------------------------------------------------------------------------
+
+switchMaster:
+	-@git checkout -f	'master'
+
+#---------------------------------------------------------------------------------
+
 #ToolchainGenericDS Package deploy format required by ToolchainGenericDS-OnlineApp.
 BuildTGDSPKG:
 	-@echo 'Build TGDS Package. '
-	-$(TGDSPKGBUILDER) $(TGDSPROJECTNAME) $(TGDSPKG_TARGET_NAME) $(LIBPATH) /release/arm7dldi-ntr/
+	-$(TGDSPKGBUILDER) $(TGDSPROJECTNAME) $(TGDSPKG_TARGET_PATH) $(LIBPATH) /release/arm7dldi-ntr/
+	
+#---------------------------------------------------------------------------------
+
+remotebootTWL:
+	-mv $(TGDSPROJECTNAME).srl	$(CURDIR)/release/arm7dldi-twl
+	-$(TGDSREMOTEBOOTER) \release\arm7dldi-twl $(TGDSREMOTEBOOTER_SERVER_IP_ADDR) twl_mode $(TGDSPROJECTNAME) $(TGDSPKG_TARGET_PATH) $(LIBPATH) remotepackage
+	-rm -rf remotepackage.zip
+
+remotebootNTR:
+	-mv $(TGDSPROJECTNAME).nds	$(CURDIR)/release/arm7dldi-ntr
+	-$(TGDSREMOTEBOOTER) \release\arm7dldi-ntr $(TGDSREMOTEBOOTER_SERVER_IP_ADDR) ntr_mode $(TGDSPROJECTNAME) $(TGDSPKG_TARGET_PATH) $(LIBPATH) remotepackage
+	-rm -rf remotepackage.zip
 	

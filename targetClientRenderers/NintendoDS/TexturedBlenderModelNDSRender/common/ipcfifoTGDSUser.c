@@ -30,6 +30,7 @@ USA
 #include "dsregs.h"
 #include "dsregs_asm.h"
 #include "InterruptsARMCores_h.h"
+#include "microphoneShared.h"
 
 #ifdef ARM7
 #include <string.h>
@@ -104,10 +105,10 @@ void setupLibUtils(){
 	initializeLibUtils9(
 		NULL, //ARM7 & ARM9
 		NULL, //ARM9 
-		NULL, //ARM7 & ARM9: void EnableSoundSampleContext(int SndSamplemode)
-		NULL, //ARM7 & ARM9: void DisableSoundSampleContext()
 		NULL, //ARM9: bool stopSoundStream(struct fd * tgdsStructFD1, struct fd * tgdsStructFD2, int * internalCodecType)
-		NULL  //ARM9: void updateStream() 
+		NULL,  //ARM9: void updateStream() 
+		NULL, //ARM7 & ARM9: DeInitWIFI()
+		NULL //ARM9: bool switch_dswnifi_mode(sint32 mode)
 	);
 	#endif
 	
@@ -120,10 +121,9 @@ void setupLibUtils(){
 		NULL, //ARM7: void TIMER1Handler()
 		NULL, //ARM7: void stopSound()
 		NULL, //ARM7: void setupSound()
-		NULL, //ARM7: initSoundSampleContext()
-		NULL, //ARM7 & ARM9: void EnableSoundSampleContext(int SndSamplemode)
-		NULL,  //ARM7 & ARM9: void DisableSoundSampleContext()
-		NULL   //ARM7: void initARM7Malloc(u32 ARM7MallocStartaddress, u32 ARM7MallocSize);
+		NULL, //ARM7: void initARM7Malloc(u32 ARM7MallocStartaddress, u32 ARM7MallocSize);
+		NULL, //ARM7 & ARM9: DeInitWIFI()
+		NULL  //ARM7: micInterrupt()
 	);
 	#endif
 }

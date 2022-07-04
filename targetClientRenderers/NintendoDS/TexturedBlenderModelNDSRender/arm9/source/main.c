@@ -74,6 +74,7 @@ USA
 #include "Cellphone.h"
 #include "Texture_Cellphone.h"	//Textures of it
 #include "Texture_Cube.h"	
+#include "Texture_Cube_Exported.h"	//exported from BMP24 into native Texture format
 
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 void menuShow(){
@@ -100,13 +101,8 @@ void closeSoundUser(){
 	//Stubbed. Gets called when closing an audiostream of a custom audio decoder
 }
 
-//ToolchainGenericDS-LinkedModule User implementation: Called if TGDS-LinkedModule fails to reload ARM9.bin from DLDI.
 char args[8][MAX_TGDSFILENAME_LENGTH];
 char *argvs[8];
-int TGDSProjectReturnFromLinkedModule() {
-	return -1;
-}
-
 
 void ReSizeGLScene(int width, int height){		// Resize And Initialize The GL Window
 	if (height==0)										// Prevent A Divide By Zero By
@@ -114,7 +110,7 @@ void ReSizeGLScene(int width, int height){		// Resize And Initialize The GL Wind
 		height=1;										// Making Height Equal One
 	}
 
-	glViewPort(0, 0, width, height);						// Reset The Current Viewport
+	glViewport(0, 0, width, height);						// Reset The Current Viewport
 	
 	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
 	glLoadIdentity();									// Reset The Projection Matrix
@@ -243,7 +239,7 @@ int main(int argc, char **argv) {
 		SETDISPCNT_MAIN(MODE_0_3D);
 		
 		//this should work the same as the normal gl call
-		glViewPort(0,0,255,191);	
+		glViewport(0,0,255,191);	
 		glClearColor(0,0,0);
 		glClearDepth(0x7FFF);
 		
@@ -251,7 +247,7 @@ int main(int argc, char **argv) {
 		
 		//Load 2 textures and map each one to a texture slot
 		u32 arrayOfTextures[2];
-		arrayOfTextures[0] = (u32)&Texture_Cube;
+		arrayOfTextures[0] = (u32)&Texture_Cube_Exported;
 		arrayOfTextures[1] = (u32)&Texture_Cellphone;
 		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
 		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 2);
