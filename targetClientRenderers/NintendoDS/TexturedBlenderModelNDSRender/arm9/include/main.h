@@ -27,6 +27,8 @@ USA
 #include "dldi.h"
 #include "utilsTGDS.h"
 
+#define TGDSPROJECTNAME ((char*)"TexturedBlenderModelNDSRender")
+
 #ifdef __cplusplus
 extern "C" {
 #endif
