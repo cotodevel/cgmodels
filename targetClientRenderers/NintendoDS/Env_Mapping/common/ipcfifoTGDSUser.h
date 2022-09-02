@@ -33,57 +33,6 @@ USA
 #include "dsregs_asm.h"
 #include "ipcfifoTGDS.h"
 
-#define SBUFCOUNT 16
-#define SBUFSIZE  44100
-
-#define SBUFSECS 4
-#define SFREQ 22050
-#define SBYTES 2
-
-#define SSAMPLES 1152
-#define SBSIZE SSAMPLES*2
-
-#define MP2BUFSIZE	1152*16
-#define MP2CHUNKSIZE 64*1024
-
-typedef struct sTransferRegion3 {
-  //uint32 heartbeat;          // counts frames
- 
-  unsigned char CMD;
- // int test;
-  //int cursound;
-  //unsigned int test2;
-  //unsigned short *sounddata;
-  //unsigned short *sounddata2;
-  //unsigned short *sdx1,*sdx2;
-
-  int lastwritten;
-  
-  unsigned int sticks;
-  unsigned int lticks;
-  unsigned int cticks;
-  bool hastick;
-  
-  unsigned char *mp2pnt;
-  unsigned char *mp2pnt2;
-  unsigned int mp2size;
-  bool mp2chunk;
-  bool mp2end;
-  bool mp2needchunk;
-  
-  unsigned short *mp2bufl;
-  unsigned short *mp2bufr;
-  bool stopmp2;
-  
-  unsigned short *mp3bufl;
-  unsigned short *mp3bufr;
-  unsigned int mp3freq;
-  unsigned int mp3outbufsize;
-  
-  long signed int t1,t2,t3,t4;
-  
-} TransferRegion3, * pTransferRegion3;
-
 //---------------------------------------------------------------------------------
 typedef struct sIPCSharedTGDSSpecific{
 //---------------------------------------------------------------------------------
@@ -96,23 +45,9 @@ typedef struct sIPCSharedTGDSSpecific{
 #define TGDS_ARM7_MALLOCSIZE (int)(96*1024)
 #define TGDSDLDI_ARM7_ADDRESS (u32)(TGDS_ARM7_MALLOCSTART + TGDS_ARM7_MALLOCSIZE)
 
-#define IPC3 ((TransferRegion3 volatile *)(((u32)TGDSIPCStartAddress + TGDSIPCSize)+sizeof(struct sIPCSharedTGDSSpecific)))
-#define LRIPC IPC3
-
-#define strpcmControl_NOP (0)
-#define strpcmControl_Play (1)
-#define strpcmControl_Stop (2)
-
-#define LCDPC_NOP (0)
-#define LCDPC_OFF_BOTH (1)
-#define LCDPC_ON_BOTTOM (2)
-#define LCDPC_ON_TOP_LEDON (3)
-#define LCDPC_ON_TOP_LEDBLINK (4)
-#define LCDPC_ON_BOTH (5)
-#define LCDPC_SOFT_POWEROFF (0xff)
+//#define ISEMULATOR 1 //defined == TGDS Project does not self reload, undedfined == TGDS Project self reloads
 
 #define REQ_GBD_ARM7 (u32)(0xffff1988)
-#define REQ_TX_FRAME (u32)(0xffff1A11)
 
 #ifdef ARM9
 static inline void initGDBSession(){
