@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
 	}
 	
 	//gl start
-	float camDist = 0.3*4;
+	float camDist = 0.3*8;
 	int rotateX = 0;
 	int rotateY = 0;
 	int cafe_texid;
@@ -214,24 +214,24 @@ int main(int argc, char **argv) {
 		SETDISPCNT_MAIN(MODE_0_3D);
 		
 		//this should work the same as the normal gl call
-		glViewport(0,0,255,191);
+		glViewport(0,0,255,191,USERSPACE_TGDS_OGL_DL_POINTER);
 		
 		glClearColor(0,0,0);
 		glClearDepth(0x7FFF);
 		
-		glReset();
+		glReset(USERSPACE_TGDS_OGL_DL_POINTER);
 		glEnable(GL_ANTIALIAS);
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
 		
 		glGenTextures( 1, &cafe_texid );
-		glBindTexture( 0, cafe_texid );
+		glBindTexture( 0, cafe_texid, USERSPACE_TGDS_OGL_DL_POINTER);
 		glTexImage2D( 0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, GL_TEXTURE_WRAP_S|GL_TEXTURE_WRAP_T|TEXGEN_NORMAL, (u8*)cafe );
 		
 		//any floating point gl call is being converted to fixed prior to being implemented
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluPerspective(30, 255.0 / 192.0, 0.1, 30);
+		glMatrixMode(GL_PROJECTION, USERSPACE_TGDS_OGL_DL_POINTER);
+		glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);
+		gluPerspective(30, 255.0 / 191.0, 0.1, 30, USERSPACE_TGDS_OGL_DL_POINTER);
 		
 	}
 	//gl end
@@ -241,27 +241,29 @@ int main(int argc, char **argv) {
 	while(1) {
 		
 		//TEXGEN_NORMAL helpfully pops our normals into this matrix and uses the result as texcoords
-		glMatrixMode(GL_TEXTURE);
-		glLoadIdentity();
+		glMatrixMode(GL_TEXTURE,USERSPACE_TGDS_OGL_DL_POINTER);
+		glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);
 		GLvector tex_scale = { 64<<16, -64<<16, 1<<16 };
-		glScalev( &tex_scale );		//scale normals up from (-1,1) range into texcoords
-		glRotateXi(rotateX);		//rotate texture-matrix to match the camera
-		glRotateYi(rotateY);
+		glScalev( &tex_scale,USERSPACE_TGDS_OGL_DL_POINTER);		//scale normals up from (-1,1) range into texcoords
+		glRotateXi(rotateX,USERSPACE_TGDS_OGL_DL_POINTER);		//rotate texture-matrix to match the camera
+		glRotateYi(rotateY,USERSPACE_TGDS_OGL_DL_POINTER);
 		
-		glMatrixMode(GL_POSITION);
-		glLoadIdentity();
+		glMatrixMode(GL_POSITION,USERSPACE_TGDS_OGL_DL_POINTER);
+		glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);
 		
 		gluLookAt(	0.0, 0.0, camDist,		//camera possition 
 				0.0, 0.0, 0.0,		//look at
-				0.0, 1.0, 0.0);		//up
+				0.0, 1.0, 0.0,		//up
+				USERSPACE_TGDS_OGL_DL_POINTER
+		);
 		
-		glTranslatef32(0, 0, 0.0);
-		glRotateXi(rotateX);
-		glRotateYi(rotateY);
+		glTranslatef32(0, 0, 0.0, USERSPACE_TGDS_OGL_DL_POINTER);
+		glRotateXi(rotateX, USERSPACE_TGDS_OGL_DL_POINTER);
+		glRotateYi(rotateY, USERSPACE_TGDS_OGL_DL_POINTER);
 
-		glMaterialf(GL_EMISSION, RGB15(31,31,31));
+		glMaterialf(GL_EMISSION, RGB15(31,31,31), USERSPACE_TGDS_OGL_DL_POINTER);
 
-		glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
+		glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK, USERSPACE_TGDS_OGL_DL_POINTER);
 
 		scanKeys();
 		u32 keys = keysHeld();
@@ -279,31 +281,10 @@ int main(int argc, char **argv) {
 		//rotateY -= pen_delta[0];
 		//rotateX -= pen_delta[1];
 		
-		glBindTexture( 0, cafe_texid );
+		glBindTexture( 0, cafe_texid, USERSPACE_TGDS_OGL_DL_POINTER);
 		glCallListGX((u32*)&Suzanne);
 		
-		glFlush();
+		glFlush(USERSPACE_TGDS_OGL_DL_POINTER);
 		if(keys & KEY_START) break;
 	}
-	
-	/*
-	while (1){
-		scanKeys();
-		if (keysDown() & KEY_SELECT){
-			menuShow();
-			scanKeys();
-			while(keysDown() & KEY_SELECT){
-				scanKeys();
-			}
-		}
-		
-		if (keysDown() & KEY_START){
-			menuShow();
-			scanKeys();
-			while(keysDown() & KEY_START){
-				scanKeys();
-			}
-		}
-	}
-	*/
 }
