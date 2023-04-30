@@ -50,6 +50,7 @@ extern struct FileClassList * thisFileList;
 extern void ReSizeGLScene(int width, int height);
 
 extern float boxMove;
+extern int InitGL();
 
 #ifdef __cplusplus
 }
