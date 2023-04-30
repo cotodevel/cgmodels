@@ -45,6 +45,7 @@ extern struct FileClassList * thisFileList;
 extern int internalCodecType;
 extern struct fd * _FileHandleVideo; 
 extern struct fd * _FileHandleAudio;
+extern int InitGL();
 
 #ifdef __cplusplus
 }
