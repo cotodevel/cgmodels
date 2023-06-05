@@ -342,7 +342,11 @@ int main(int argc, char **argv) {
 		
 		glReset();
 		
+		//Direct Tex (PCX 128x128, using internal TGDS texture names buffer)
+		LoadGLSingleTextureAuto((u32)&Texture_Cube, (int *)&textureID, textureID);
+		
 		//Multiple 64x64 textures as BPM
+		/*
 		//Load 2 textures and map each one to a texture slot
 		u32 arrayOfTextures[2];
 		arrayOfTextures[0] = (u32)&Texture_Cube_Exported;
@@ -352,7 +356,7 @@ int main(int argc, char **argv) {
 		for(i = 0; i < texturesInSlot; i++){
 			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
 		}
-		
+		*/
 		glEnable(GL_ANTIALIAS);
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
