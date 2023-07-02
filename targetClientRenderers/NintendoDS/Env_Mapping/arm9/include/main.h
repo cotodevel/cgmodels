@@ -27,8 +27,6 @@ USA
 #include "dldi.h"
 #include "utilsTGDS.h"
 
-#define TGDSPROJECTNAME ((char*)"Env_Mapping")
-
 #ifdef __cplusplus
 extern "C" {
 #endif
