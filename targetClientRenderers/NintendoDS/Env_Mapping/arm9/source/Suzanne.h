@@ -1,4 +1,4 @@
-#include "VideoGL.h"
+#include "videoGL.h"
 #include "videoTGDS.h"
 
 u32 Suzanne[] = {
