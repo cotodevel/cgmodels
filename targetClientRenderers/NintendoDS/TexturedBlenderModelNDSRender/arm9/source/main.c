@@ -342,7 +342,11 @@ int main(int argc, char **argv) {
 		
 		glReset();
 		
+		//Direct Tex (PCX 128x128, using internal TGDS texture names buffer)
+		LoadGLSingleTextureAuto((u32)&Texture_Cube, (int *)&textureID, textureID);
+		
 		//Multiple 64x64 textures as BPM
+		/*
 		//Load 2 textures and map each one to a texture slot
 		u32 arrayOfTextures[2];
 		arrayOfTextures[0] = (u32)&Texture_Cube_Exported;
@@ -352,7 +356,7 @@ int main(int argc, char **argv) {
 		for(i = 0; i < texturesInSlot; i++){
 			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
 		}
-		
+		*/
 		glEnable(GL_ANTIALIAS);
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_BLEND);
@@ -451,7 +455,8 @@ int main(int argc, char **argv) {
 
 int InitGL()										// All Setup For OpenGL Goes Here
 {
-	glInit(); //NDSDLUtils: Initializes a new videoGL context	
+	int TGDSOpenGLDisplayListWorkBufferSize = (256*1024);
+	glInit(TGDSOpenGLDisplayListWorkBufferSize); //NDSDLUtils: Initializes a new videoGL context	
 	glClearColor(255,255,255);		// White Background
 	glClearDepth(0x7FFF);		// Depth Buffer Setup
 	glEnable(GL_ANTIALIAS);
