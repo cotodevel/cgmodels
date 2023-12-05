@@ -330,16 +330,21 @@ int main(int argc, char **argv) {
 		
 		glReset();
 		
+		//Direct Tex (PCX 128x128)
+		LoadGLTextures((u32)&Texture_Cube);
+		
+		//Multiple 64x64 textures as BPM
+		/*
 		//Load 2 textures and map each one to a texture slot
 		u32 arrayOfTextures[2];
 		arrayOfTextures[0] = (u32)&Texture_Cube_Exported;
 		arrayOfTextures[1] = (u32)&Texture_Cellphone;
 		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
 		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 2);
-		
 		for(i = 0; i < texturesInSlot; i++){
 			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
 		}
+		*/
 		
 		glEnable(GL_ANTIALIAS);
 		glEnable(GL_TEXTURE_2D);
@@ -391,7 +396,7 @@ int main(int argc, char **argv) {
 		// Use the display list
 		for (yloop=1;yloop<6;yloop++){
 			if(yloop != 4){
-				glBindTexture( 0, textureArrayNDS[1]);
+				glBindTexture( 0, 0); //glBindTexture( 0, textureArrayNDS[1]);
 				glLoadIdentity();							// Reset The View		
 				gluLookAt(	-0.1, -0.1, lookat,		//camera possition 
 				1.0, -distX, -distY,		//look at
@@ -401,7 +406,7 @@ int main(int argc, char **argv) {
 				glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
 				
 				glTranslatef32(0, 0, 0.0);
-				glRotateX(-90.0);	//Because OBJ Axis is 90º inverted...
+				glRotateX(-90.0);	//Because OBJ Axis is 90ï¿½ inverted...
 				glRotateY(45.0);
 				
 				// Execute the display list
@@ -409,7 +414,7 @@ int main(int argc, char **argv) {
 			}
 			//render a Cube on the 4th object
 			else{
-				glBindTexture( 0, textureArrayNDS[0]);
+				glBindTexture( 0, 0);	//glBindTexture( 0, textureArrayNDS[0]);
 				glLoadIdentity();							// Reset The View		
 				gluLookAt(	-0.9, -0.9, (0.9) + lookat,		//camera possition 
 				-3.0, distX, distY,		//look at
@@ -419,7 +424,7 @@ int main(int argc, char **argv) {
 				glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK );
 				
 				glTranslatef32(60.0, 60.0, 60.0);
-				glRotateX(-boxMove);	//Because OBJ Axis is 90º inverted...
+				glRotateX(-boxMove);	//Because OBJ Axis is 90ï¿½ inverted...
 				glRotateY(boxMove);
 				
 				// Execute the display list
