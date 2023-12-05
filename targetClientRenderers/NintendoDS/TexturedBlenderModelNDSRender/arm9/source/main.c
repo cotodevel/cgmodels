@@ -110,16 +110,16 @@ void ReSizeGLScene(int width, int height){		// Resize And Initialize The GL Wind
 		height=1;										// Making Height Equal One
 	}
 
-	glViewport(0, 0, width, height, USERSPACE_TGDS_OGL_DL_POINTER);						// Reset The Current Viewport
+	glViewport(0, 0, width, height);						// Reset The Current Viewport
 	
-	glMatrixMode(GL_PROJECTION, USERSPACE_TGDS_OGL_DL_POINTER);						// Select The Projection Matrix
-	glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);									// Reset The Projection Matrix
+	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
+	glLoadIdentity();									// Reset The Projection Matrix
 
 	// Calculate The Aspect Ratio Of The Window
-	gluPerspective(45.0f,(float)width/(float)height,0.1f,100.0f, USERSPACE_TGDS_OGL_DL_POINTER);
+	gluPerspective(45.0f,(float)width/(float)height,0.1f,100.0f);
 
-	glMatrixMode(GL_MODELVIEW, USERSPACE_TGDS_OGL_DL_POINTER);							// Select The Modelview Matrix
-	glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);									// Reset The Modelview Matrix
+	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
+	glLoadIdentity();									// Reset The Modelview Matrix
 }
 
 //true: pen touch
@@ -312,6 +312,7 @@ int main(int argc, char **argv) {
 	menuShow();
 	
 	//gl start
+		InitGL();
 		float camDist = 0.3*4;
 		float rotateX = 0.0;
 		float rotateY = 0.0;
@@ -324,11 +325,11 @@ int main(int argc, char **argv) {
 		SETDISPCNT_MAIN(MODE_0_3D);
 		
 		//this should work the same as the normal gl call
-		glViewport(0,0,255,191, USERSPACE_TGDS_OGL_DL_POINTER);	
+		glViewport(0,0,255,191);	
 		glClearColor(0,0,0);
 		glClearDepth(0x7FFF);
 		
-		glReset(USERSPACE_TGDS_OGL_DL_POINTER);
+		glReset();
 		
 		//Direct Tex (PCX 128x128)
 		LoadGLTextures((u32)&Texture_Cube);
@@ -351,9 +352,9 @@ int main(int argc, char **argv) {
 		glEnable(GL_BLEND);
 		
 		//any floating point gl call is being converted to fixed prior to being implemented
-		glMatrixMode(GL_PROJECTION, USERSPACE_TGDS_OGL_DL_POINTER);
-		glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);
-		gluPerspective(35, 256.0 / 192.0, 0.1, 40, USERSPACE_TGDS_OGL_DL_POINTER);	
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(35, 256.0 / 192.0, 0.1, 40);	
 	//gl end
 	//ReSizeGLScene(240, 160);
 	
@@ -369,8 +370,8 @@ int main(int argc, char **argv) {
 		distX -= (pen_delta[1] );
 		
 		lookat = -0.65;
-		glPushMatrix(USERSPACE_TGDS_OGL_DL_POINTER);	
-		glMatrixMode(GL_POSITION, USERSPACE_TGDS_OGL_DL_POINTER);
+		glPushMatrix();	
+		glMatrixMode(GL_POSITION);
 		
 		//NDS GX server does not know this but OpenGL states:
 		//Steps in the Initialization Process
@@ -396,38 +397,40 @@ int main(int argc, char **argv) {
 		// Use the display list
 		for (yloop=1;yloop<6;yloop++){
 			if(yloop != 4){
-				glBindTexture( 0, 0, USERSPACE_TGDS_OGL_DL_POINTER); //glBindTexture( 0, textureArrayNDS[1]);
-				glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);							// Reset The View		
+				glBindTexture( 0, 0); //glBindTexture( 0, textureArrayNDS[1]);
+				glLoadIdentity();							// Reset The View		
 				gluLookAt(	-0.1, -0.1, lookat,		//camera possition 
 				1.0, -distX, -distY,		//look at
-				0.0, 1.0, 0.0,		//up
-				USERSPACE_TGDS_OGL_DL_POINTER);
+				0.0, 1.0, 0.0		//up
+				);
 				
-				glMaterialf(GL_EMISSION, RGB15(31,31,31), USERSPACE_TGDS_OGL_DL_POINTER);
-				glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK, USERSPACE_TGDS_OGL_DL_POINTER);
+				GLfloat mat_emission[]   = { 31, 31, 31, 0 };
+				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
+				updateGXLights(); //Update GX 3D light scene!
 				
-				glTranslatef32(0, 0, 0.0, USERSPACE_TGDS_OGL_DL_POINTER);
-				glRotateX(-90.0, USERSPACE_TGDS_OGL_DL_POINTER);	//Because OBJ Axis is 90� inverted...
-				glRotateY(45.0, USERSPACE_TGDS_OGL_DL_POINTER);
+				glTranslatef32(0, 0, 0.0);
+				glRotateX(-90.0);	//Because OBJ Axis is 90� inverted...
+				glRotateY(45.0);
 				
 				// Execute the display list
 				glCallListGX((u32*)&Cellphone);
 			}
 			//render a Cube on the 4th object
 			else{
-				glBindTexture( 0, 0, USERSPACE_TGDS_OGL_DL_POINTER);	//glBindTexture( 0, textureArrayNDS[0]);
-				glLoadIdentity(USERSPACE_TGDS_OGL_DL_POINTER);							// Reset The View		
+				glBindTexture( 0, 0);	//glBindTexture( 0, textureArrayNDS[0]);
+				glLoadIdentity();							// Reset The View		
 				gluLookAt(	-0.9, -0.9, (0.9) + lookat,		//camera possition 
 				-3.0, distX, distY,		//look at
-				14.0, 7.0, -14.0,	//up
-				USERSPACE_TGDS_OGL_DL_POINTER);
+				14.0, 7.0, -14.0	//up
+				);
 				
-				glMaterialf(GL_EMISSION, RGB15(31,31,31), USERSPACE_TGDS_OGL_DL_POINTER);
-				glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK, USERSPACE_TGDS_OGL_DL_POINTER);
+				GLfloat mat_emission[]   = { 31, 31, 31, 0 };
+				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
+				updateGXLights(); //Update GX 3D light scene!
 				
-				glTranslatef32(60.0, 60.0, 60.0, USERSPACE_TGDS_OGL_DL_POINTER);
-				glRotateX(-boxMove, USERSPACE_TGDS_OGL_DL_POINTER);	//Because OBJ Axis is 90� inverted...
-				glRotateY(boxMove, USERSPACE_TGDS_OGL_DL_POINTER);
+				glTranslatef32(60.0, 60.0, 60.0);
+				glRotateX(-boxMove);	//Because OBJ Axis is 90� inverted...
+				glRotateY(boxMove);
 				
 				// Execute the display list
 				glCallListGX((u32*)&Cube);
@@ -435,8 +438,17 @@ int main(int argc, char **argv) {
 			lookat+=0.3;
 		}
 		
-		glFlush(USERSPACE_TGDS_OGL_DL_POINTER);
-		glPopMatrix(1, USERSPACE_TGDS_OGL_DL_POINTER);
+		glFlush();
+		glPopMatrix(1);
 	}
-	
+}
+
+int InitGL()										// All Setup For OpenGL Goes Here
+{
+	glInit(); //NDSDLUtils: Initializes a new videoGL context	
+	glClearColor(255,255,255);		// White Background
+	glClearDepth(0x7FFF);		// Depth Buffer Setup
+	glEnable(GL_ANTIALIAS);
+	glEnable(GL_TEXTURE_2D); // Enable Texture Mapping 
+	glEnable(GL_BLEND);
 }
