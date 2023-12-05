@@ -40,7 +40,7 @@ USA
 #include <stdio.h>
 #include "posixHandleTGDS.h"
 #include "TGDSMemoryAllocator.h"
-#include "VideoGL.h"
+#include "videoGL.h"
 #include "videoTGDS.h"
 #include "spitscTGDS.h"
 #include "Suzanne.h"
