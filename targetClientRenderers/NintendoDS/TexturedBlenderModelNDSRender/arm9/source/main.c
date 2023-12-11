@@ -1,6 +1,6 @@
 /*
 			Copyright (C) 2017  Coto
-This program is TGDSARM9Free software; you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
@@ -54,47 +54,71 @@ USA
 #include "cartHeader.h"
 #include "ff.h"
 #include "dldi.h"
-#include "xmem.h"
+#include "loader.h"
 #include "dmaTGDS.h"
-#include "timerTGDS.h"
 #include "nds_cp15_misc.h"
 #include "fileBrowse.h"
-#include "biosTGDS.h"
-#include "keypadTGDS.h"
-#include "global_settings.h"
 #include <stdio.h>
+#include "biosTGDS.h"
+#include "global_settings.h"
 #include "posixHandleTGDS.h"
 #include "TGDSMemoryAllocator.h"
+
+#include "Texture_Cube.h"
+#include "Texture_Cube_Exported.h"
 #include "videoGL.h"
 #include "videoTGDS.h"
+#include "math.h"
+#include "16bpp.h" 
 #include "imagepcx.h"
-#include "spitscTGDS.h"
 
-#include "Cube.h"	//Meshes Generated from Blender 2.49b
-#include "Cellphone.h"
-#include "Texture_Cellphone.h"	//Textures of it
-#include "Texture_Cube.h"	
-#include "Texture_Cube_Exported.h"	//exported from BMP24 into native Texture format
+float rotateX = 0.0;
+float rotateY = 0.0;
+float camDist = 0.3*4;
+//3D Cube end
 
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
+
+//Back to loader, based on Whitelisted DLDI names
+static char curLoaderNameFromDldiString[MAX_TGDSFILENAME_LENGTH+1];
+static inline char * canGoBackToLoader(){
+	char * dldiName = dldi_tryingInterface();
+	if(dldiName != NULL){
+		if(strcmp(dldiName, "R4iDSN") == 0){	//R4iGold loader
+			strcpy(curLoaderNameFromDldiString, "0:/_DS_MENU.dat_ori");	//this allows to return to original payload code, and autoboot to TGDS-multiboot 
+			return (char*)&curLoaderNameFromDldiString[0];
+		}
+		if(strcmp(dldiName, "Ninjapass X9 (SD Card)") == 0){	//Ninjapass X9SD
+			strcpy(curLoaderNameFromDldiString, "0:/loader.nds");
+			return (char*)&curLoaderNameFromDldiString[0];
+		}
+	}
+	return NULL;
+}
+
 void menuShow(){
 	clrscr();
 	printf("                              ");
-	printf(" TexturedBlenderModelNDSRender example ");
-	printf(" Use the D-PAD to move the rendered polygon ");
-	printf(" Polygon rendered and textured from Blender natively. ");
-	
+	printf(" TexturedBlenderModelNDSRender example:");
+	printf("                              ");
+	printf("Button (Start): File browser ");
+	printf("    Button (A) Load TGDS/devkitARM NDS Binary. ");
+	printf("                              ");
+	printf("(Select): back to Loader. >%d", TGDSPrintfColor_Green);
 	printf("Available heap memory: %d", getMaxRam());
-	printf("Button (Select): this menu. ");
+	printf("Select: this menu");
 }
 
-//TGDS Soundstreaming API
-int internalCodecType = SRC_NONE; //Returns current sound stream format: WAV, ADPCM or NONE
-struct fd * _FileHandleVideo = NULL; 
-struct fd * _FileHandleAudio = NULL;
-
-bool stopSoundStreamUser(){
+//new: this bootcode will run from VRAM, once the NDSBinary context has been created and handled by the reload bootcode.
+//generates a table of sectors out of a given file. It has the ARM7 binary and ARM9 binary
+bool ReloadNDSBinaryFromContext(char * filename)  {
 	
+	return false;
+}
+
+int internalCodecType = SRC_NONE;//Internal because WAV raw decompressed buffers are used if Uncompressed WAV or AD
+bool stopSoundStreamUser(){
+	return false;
 }
 
 void closeSoundUser(){
@@ -104,100 +128,12 @@ void closeSoundUser(){
 char args[8][MAX_TGDSFILENAME_LENGTH];
 char *argvs[8];
 
-void ReSizeGLScene(int width, int height){		// Resize And Initialize The GL Window
-	if (height==0)										// Prevent A Divide By Zero By
-	{
-		height=1;										// Making Height Equal One
-	}
+int texID;
 
-	glViewport(0, 0, width, height);						// Reset The Current Viewport
-	
-	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
-	glLoadIdentity();									// Reset The Projection Matrix
-
-	// Calculate The Aspect Ratio Of The Window
-	gluPerspective(45.0f,(float)width/(float)height,0.1f,100.0f);
-
-	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
-	glLoadIdentity();									// Reset The Modelview Matrix
-}
-
-//true: pen touch
-//false: no tsc activity
-static bool get_pen_delta( int *dx, int *dy ){
-	static int prev_pen[2] = { 0x7FFFFFFF, 0x7FFFFFFF };
-	
-	// TSC Test.
-	struct touchPosition touch;
-	XYReadScrPosUser(&touch);
-	
-	if( (touch.px == 0) && (touch.py == 0) ){
-		prev_pen[0] = prev_pen[1] = 0x7FFFFFFF;
-		*dx = *dy = 0;
-		return false;
-	}
-	else{
-		if( prev_pen[0] != 0x7FFFFFFF ){
-			*dx = (prev_pen[0] - touch.px);
-			*dy = (prev_pen[1] - touch.py);
-		}
-		prev_pen[0] = touch.px;
-		prev_pen[1] = touch.py;
-	}
-	return true;
-}
-
-#define NAN 0x80000000
-#define BIAS 127
-#define K 8
-#define N 23
-typedef unsigned float_bits;
-/* Compute (int) f.
- * If conversion causes overflow or f is NaN, return 0x80000000
- */
-static inline int float_f2i(float_bits f) {
-  unsigned s = f >> (K + N);
-  unsigned exp = f >> N & 0xFF;
-  unsigned frac = f & 0x7FFFFF;
-  
-  /* Denormalized values round to 0 */
-  if (exp == 0)
-    return 0;
-  /* f is NaN */
-  if (exp == 0xFF)
-    return NAN;
-  /* Normalized values */
-  int x;
-  int E = exp - BIAS;
-  /* Normalized value less than 0, return 0 */
-  if (E < 0)
-    return 0;
-  /* Overflow condition */
-  if (E > 30)
-    return NAN;
-  x = 1 << E;
-  if (E < N)
-    x |= frac >> (N - E);
-  else
-    x |= frac << (E - N);
-  /* Negative values */
-  if (s == 1)
-    x = ~x + 1;
-  return x;  
-}
-
-float boxMove = 0.0;
-
-#if (defined(__GNUC__) && !defined(__clang__))
-__attribute__((optimize("Os")))
-#endif
-#if (!defined(__GNUC__) && defined(__clang__))
-__attribute__ ((optnone))
-#endif
-int main(int argc, char **argv) {
+int main(int argc, char **argv)   {
 	
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
-	bool isTGDSCustomConsole = true;	//set default console or custom console: true
+	bool isTGDSCustomConsole = true;	//set default console or custom console
 	GUI_init(isTGDSCustomConsole);
 	GUI_clear();
 	
@@ -323,13 +259,8 @@ int main(int argc, char **argv) {
 	menuShow();
 	
 	//gl start
+	{
 		InitGL();
-		float camDist = 0.3*4;
-		float rotateX = 0.0;
-		float rotateY = 0.0;
-		
-		float distX = 0.0;
-		float distY = 0.0;
 		setOrientation(ORIENTATION_0, true);
 		
 		//set mode 0, enable BG0 and set it to 3D
@@ -340,126 +271,339 @@ int main(int argc, char **argv) {
 		glClearColor(0,0,0);
 		glClearDepth(0x7FFF);
 		
-		glReset();
+		glGenTextures(1, &texID);
+		glBindTexture(0, texID);
+		glTexImage2D(0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, TEXGEN_TEXCOORD, (u8*)_6bppBitmap);		
 		
 		//Direct Tex (PCX 128x128, using internal TGDS texture names buffer)
-		LoadGLSingleTextureAuto((u32)&Texture_Cube, (int *)&textureID, textureID);
+		//LoadGLSingleTextureAuto((u32)&Texture_Cube, (int *)&texID, texID);
 		
 		//Multiple 64x64 textures as BPM
-		/*
+		
 		//Load 2 textures and map each one to a texture slot
-		u32 arrayOfTextures[2];
-		arrayOfTextures[0] = (u32)&Texture_Cube_Exported;
-		arrayOfTextures[1] = (u32)&Texture_Cellphone;
+		/*
+		u32 arrayOfTextures[1];
+		arrayOfTextures[0] = (u32)&Texture_Cube;
 		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
-		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 2);
+		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 1);
 		for(i = 0; i < texturesInSlot; i++){
 			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
 		}
 		*/
-		glEnable(GL_ANTIALIAS);
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_BLEND);
-		
-		//any floating point gl call is being converted to fixed prior to being implemented
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluPerspective(35, 256.0 / 192.0, 0.1, 40);	
-	//gl end
-	//ReSizeGLScene(240, 160);
-	
-	int objects = 0;
-	float lookat = 6.0;
-	int xloop=0,yloop=0;
-	int xrot=0,yrot=0;
-	
-	while(1) {		
-		int pen_delta[2];
-		bool isTSCActive = get_pen_delta( &pen_delta[0], &pen_delta[1] );
-		distY -= (pen_delta[0]);
-		distX -= (pen_delta[1] );
-		
-		lookat = -0.65;
-		glPushMatrix();	
-		glMatrixMode(GL_POSITION);
-		
-		//NDS GX server does not know this but OpenGL states:
-		//Steps in the Initialization Process
-			//Name the display list : GLuint glGenLists(GLsizei range)
-			//Create the display list:
-			
-			//The Functions:
-			//void glNewList(GLuint name, GLenum mode) specifies the start of list with index name
-			//void glEndList() specifies the end
-				//Modes:
-				//GL_COMPILE or GL_COMPILE_AND_EXECUTE
-				
-			//Example: Create the display list
-			  //glNewList(teapot, GL_COMPILE);
-			  //glutSolidTeapot(0.2);
-			  //glEndList();
-		
-		//Steps in the Rendering Process
-			//Transform, set material properties, etc (Use the display list)
-			//Finally, Execute the display list
 
-		
-		// Use the display list
-		for (yloop=1;yloop<6;yloop++){
-			if(yloop != 4){
-				glBindTexture( 0, 0); //glBindTexture( 0, textureArrayNDS[1]);
-				glLoadIdentity();							// Reset The View		
-				gluLookAt(	-0.1, -0.1, lookat,		//camera possition 
-				1.0, -distX, -distY,		//look at
-				0.0, 1.0, 0.0		//up
-				);
-				
-				GLfloat mat_emission[]   = { 31, 31, 31, 0 };
-				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
-				updateGXLights(); //Update GX 3D light scene!
-				
-				glTranslatef32(0, 0, 0.0);
-				glRotateX(-90.0);	//Because OBJ Axis is 90� inverted...
-				glRotateY(45.0);
-				
-				// Execute the display list
-				glCallListGX((u32*)&Cellphone);
-			}
-			//render a Cube on the 4th object
-			else{
-				glBindTexture( 0, 0);	//glBindTexture( 0, textureArrayNDS[0]);
-				glLoadIdentity();							// Reset The View		
-				gluLookAt(	-0.9, -0.9, (0.9) + lookat,		//camera possition 
-				-3.0, distX, distY,		//look at
-				14.0, 7.0, -14.0	//up
-				);
-				
-				GLfloat mat_emission[]   = { 31, 31, 31, 0 };
-				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
-				updateGXLights(); //Update GX 3D light scene!
-				
-				glTranslatef32(60.0, 60.0, 60.0);
-				glRotateX(-boxMove);	//Because OBJ Axis is 90� inverted...
-				glRotateY(boxMove);
-				
-				// Execute the display list
-				glCallListGX((u32*)&Cube);
-			}
-			lookat+=0.3;
-		}
-		
-		glFlush();
-		glPopMatrix(1);
+		glReset();
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ANTIALIAS);
+		glEnable(GL_BLEND);
+	}
+	//gl end
+	
+	char * arg0 = (0x02280000 - (MAX_TGDSFILENAME_LENGTH+1));
+	ReloadNDSBinaryFromContext(arg0);
+	
+	while (1){
+		handleARM9SVC();	/* Do not remove, handles TGDS services */
+		IRQWait(0, IRQ_VBLANK);
 	}
 }
 
-int InitGL()										// All Setup For OpenGL Goes Here
-{
+void InitGL(){
+#ifdef _MSC_VER
+	// initialise glut
+	glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
+	glutInitWindowSize(width, height);
+    glutInitWindowPosition(100, 100);
+	glutCreateWindow("TGDS Project through OpenGL (GLUT)");
+	glutDisplayFunc(drawScene);
+	glutReshapeFunc(ReSizeGLScene);
+	glutKeyboardFunc(keyboard);
+    glutSpecialFunc(keyboardSpecial);
+	setVSync(true);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    float pos_light[4] = { 5.0f, 5.0f, 10.0f, 0.0f };
+    glLightfv(GL_LIGHT0, GL_POSITION, pos_light);
+    glEnable(GL_LIGHT0);
+	glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+	glDisable(GL_LIGHTING);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+#endif
+
+#ifdef ARM9
 	int TGDSOpenGLDisplayListWorkBufferSize = (256*1024);
-	glInit(TGDSOpenGLDisplayListWorkBufferSize); //NDSDLUtils: Initializes a new videoGL context	
+	glInit(TGDSOpenGLDisplayListWorkBufferSize); //NDSDLUtils: Initializes a new videoGL context
+	
 	glClearColor(255,255,255);		// White Background
 	glClearDepth(0x7FFF);		// Depth Buffer Setup
-	glEnable(GL_ANTIALIAS);
-	glEnable(GL_TEXTURE_2D); // Enable Texture Mapping 
-	glEnable(GL_BLEND);
+	glEnable(GL_ANTIALIAS|GL_TEXTURE_2D|GL_BLEND); // Enable Texture Mapping + light #0 enabled per scene
+
+	glDisable(GL_LIGHT0|GL_LIGHT1|GL_LIGHT2|GL_LIGHT3);
+
+	setTGDSARM9PrintfCallback((printfARM9LibUtils_fn)&TGDSDefaultPrintf2DConsole); //Redirect to default TGDS printf Console implementation
+	menuShow();
+	
+	REG_IE |= IRQ_VBLANK;
+	glReset(); //Depend on GX stack to render scene
+	glClearColor(0,35,195);		// blue green background colour
+
+	/* TGDS 1.65 OpenGL 1.1 Initialization */
+	ReSizeGLScene(255, 191);
+	glMaterialShinnyness();
+
+	//#1: Load a texture and map each one to a texture slot
+	/*
+	u32 arrayOfTextures[7];
+	arrayOfTextures[0] = (u32)&apple; //0: apple.bmp  
+	arrayOfTextures[1] = (u32)&boxbitmap; //1: boxbitmap.bmp  
+	arrayOfTextures[2] = (u32)&brick; //2: brick.bmp  
+	arrayOfTextures[3] = (u32)&grass; //3: grass.bmp
+	arrayOfTextures[4] = (u32)&menu; //4: menu.bmp
+	arrayOfTextures[5] = (u32)&snakegfx; //5: snakegfx.bmp
+	arrayOfTextures[6] = (u32)&Texture_Cube; //6: Texture_Cube.bmp
+	int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&texturesSnakeGL, 7); //Implements both glBindTexture and glTexImage2D 
+	int i = 0;
+	for(i = 0; i < texturesInSlot; i++){
+		printf("Texture loaded: %d:textID[%d] Size: %d", i, texturesSnakeGL[i], getTextureBaseFromTextureSlot(activeTexture));
+	}
+	*/
+#endif
+
+	glEnable(GL_COLOR_MATERIAL);	//allow to mix both glColor3f + light sources when lighting is enabled (glVertex + glNormal3f)
+
+
+	glDisable(GL_CULL_FACE); 
+	glCullFace (GL_NONE);
+
+	setupTGDSProjectOpenGLDisplayLists();
+}
+
+GLint DLEN2DTEX = -1;
+GLint DLDIS2DTEX = -1;
+GLint DLSOLIDCUBE05F = -1;
+
+#ifdef ARM9
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__((optnone))
+#endif
+#endif
+void setupTGDSProjectOpenGLDisplayLists(){
+	// Generate Different Lists
+	// 1: enable_2D_texture()
+	DLEN2DTEX=(GLint)glGenLists(1);							
+	glNewList(DLEN2DTEX,GL_COMPILE);						
+	{
+		GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f }; 
+		GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f }; 
+		GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f }; 
+		GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f }; 
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	   
+		glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient); 
+        glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse); 
+        glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); 
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position); 
+		
+		
+		{
+			#ifdef WIN32
+			GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f }; //WIN32
+			GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f }; //WIN32
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
+			GLfloat high_shininess[] = { 0.0f }; //WIN32
+			#endif
+			#ifdef ARM9
+			GLfloat mat_ambient[]    = { 60.0f, 60.0f, 60.0f, 60.0f }; //NDS
+			GLfloat mat_diffuse[]    = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat high_shininess[] = { 128.0f }; //NDS
+			#endif
+			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   mat_ambient);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   mat_diffuse); 
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  mat_specular); 
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, high_shininess);
+		}
+	}
+	
+	glEndList();
+	DLDIS2DTEX=glGenLists(1);
+
+	// 2: disable_2D_texture()
+	glNewList(DLDIS2DTEX,GL_COMPILE);
+	{
+		GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
+        GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
+        GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		
+		glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient); 
+        glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse); 
+        glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); 
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position); 
+
+		
+		{
+			#ifdef ARM9
+			GLfloat mat_ambient[]    = { 60.0f, 60.0f, 60.0f, 60.0f }; //NDS
+			GLfloat mat_diffuse[]    = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat high_shininess[] = { 128.0f }; //NDS
+			#endif
+
+			#ifdef WIN32
+			GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f }; //WIN32
+			GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f }; //WIN32
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
+			GLfloat high_shininess[] = { 100.0f }; //WIN32
+			#endif
+			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   mat_ambient); 
+			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   mat_diffuse);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  mat_specular);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, high_shininess);
+		}
+	}
+	glEndList();
+	DLSOLIDCUBE05F=glGenLists(1);
+
+	// 3: draw solid cube: 0.5f()
+	glNewList(DLSOLIDCUBE05F, GL_COMPILE);
+	{
+		float size = 0.5f;
+		GLfloat n[6][3] =
+		{
+			{-1.0f, 0.0f, 0.0f},
+			{0.0f, 1.0f, 0.0f},
+			{1.0f, 0.0f, 0.0f},
+			{0.0f, -1.0f, 0.0f},
+			{0.0f, 0.0f, 1.0f},
+			{0.0f, 0.0f, -1.0f}
+		};
+		GLint faces[6][4] =
+		{
+			{0, 1, 2, 3},
+			{3, 2, 6, 7},
+			{7, 6, 5, 4},
+			{4, 5, 1, 0},
+			{5, 6, 2, 1},
+			{7, 4, 0, 3}
+		};
+		GLfloat v[8][3];
+		GLint i;
+
+		v[0][0] = v[1][0] = v[2][0] = v[3][0] = -size / 2;
+		v[4][0] = v[5][0] = v[6][0] = v[7][0] = size / 2;
+		v[0][1] = v[1][1] = v[4][1] = v[5][1] = -size / 2;
+		v[2][1] = v[3][1] = v[6][1] = v[7][1] = size / 2;
+		v[0][2] = v[3][2] = v[4][2] = v[7][2] = -size / 2;
+		v[1][2] = v[2][2] = v[5][2] = v[6][2] = size / 2;
+
+		for (i = 5; i >= 0; i--)
+		{
+			glBegin(GL_QUADS);
+				glNormal3fv(&n[i][0]);
+				glTexCoord2f(0, 0);
+				glVertex3fv(&v[faces[i][0]][0]);
+				glTexCoord2f(1, 0);
+				glVertex3fv(&v[faces[i][1]][0]);
+				glTexCoord2f(1, 1);
+				glVertex3fv(&v[faces[i][2]][0]);
+				glTexCoord2f(0, 1);
+				glVertex3fv(&v[faces[i][3]][0]);
+			glEnd();
+		}
+	}
+	glEndList();
+	
+	DLSPHERE = (GLint)glGenLists(1);
+	//drawSphere(); -> NDS GX Implementation
+	glNewList(DLSPHERE, GL_COMPILE); //recompile a light-based sphere as OpenGL DisplayList for rendering on upper screen later
+	{
+		float r=1; 
+		int lats=8; 
+		int longs=8;
+		int i, j;
+		for (i = 0; i <= lats; i++) {
+			float lat0 = M_PI * (-0.5 + (float)(i - 1) / lats);
+			float z0 = sin((float)lat0);
+			float zr0 = cos((float)lat0);
+
+			float lat1 = M_PI * (-0.5 + (float)i / lats);
+			float z1 = sin((float)lat1);
+			float zr1 = cos((float)lat1);
+			glBegin(GL_TRIANGLE_STRIP);
+			for (j = 0; j <= longs; j++) {
+				float lng = 2 * M_PI * (float)(j - 1) / longs;
+				float x = cos(lng);
+				float y = sin(lng);
+				glNormal3f(x * zr0, y * zr0, z0);
+				glVertex3f(r * x * zr0, r * y * zr0, r * z0);
+				glNormal3f(x * zr1, y * zr1, z1);
+				glVertex3f(r * x * zr1, r * y * zr1, r * z1);
+			}
+			glEnd();
+		}
+	}
+	glEndList();
+}
+
+#ifdef ARM9
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__((optnone))
+#endif
+#endif
+GLvoid ReSizeGLScene(GLsizei widthIn, GLsizei heightIn)		// resizes the window (GLUT & TGDS GL)
+{
+	#ifdef WIN32 //todo: does this work on NDS?
+	if (heightIn==0)										// Prevent A Divide By Zero By
+	{
+		heightIn=1;										// Making Height Equal One
+	}
+
+	glViewport(0,0,widthIn,heightIn);						// Reset The Current Viewport
+
+	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
+	glLoadIdentity();									// Reset The Projection Matrix
+
+	// Calculate The Aspect Ratio Of The Window
+	gluPerspective(45.0f,(GLfloat)widthIn/(GLfloat)heightIn,0.1f,100.0f);
+
+	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
+	glLoadIdentity();									// Reset The Modelview Matrix
+	#endif
+
+	#ifdef ARM9
+	if (heightIn==0)										// Prevent A Divide By Zero By
+	{
+		heightIn=1;										// Making Height Equal One
+	}
+
+	glViewport(0,0,widthIn,heightIn);						// Reset The Current Viewport
+
+	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
+	glLoadIdentity();									// Reset The Projection Matrix
+
+	// Calculate The Aspect Ratio Of The Window
+	gluPerspective(45.0f,(GLfloat)widthIn/(GLfloat)heightIn,0.1f,100.0f);
+
+	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
+	glLoadIdentity();									// Reset The Modelview Matrix
+	#endif
 }
