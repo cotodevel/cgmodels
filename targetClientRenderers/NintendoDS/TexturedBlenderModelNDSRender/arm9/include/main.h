@@ -26,6 +26,7 @@ USA
 #include "limitsTGDS.h"
 #include "dldi.h"
 #include "utilsTGDS.h"
+#include "videoGL.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,15 +41,28 @@ extern struct fd * _FileHandleVideo;
 extern struct fd * _FileHandleAudio;
 extern bool stopSoundStreamUser();
 extern void closeSoundUser();
+extern int internalCodecType;
 
 extern int main(int argc, char **argv);
 extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 extern bool fillNDSLoaderContext(char * filename);
 extern struct FileClassList * thisFileList;
-extern void ReSizeGLScene(int width, int height);
 
-extern float boxMove;
-extern int InitGL();
+extern int textureID ;
+extern float rotateX ;
+extern float rotateY ;
+extern float camDist ;
+extern int texID;
+
+
+extern void InitGL();
+
+extern GLint DLSPHERE;
+extern GLint DLEN2DTEX;
+extern GLint DLDIS2DTEX;
+extern GLint DLSOLIDCUBE05F;
+extern void setupTGDSProjectOpenGLDisplayLists();
+extern GLvoid ReSizeGLScene(GLsizei widthIn, GLsizei heightIn);
 
 #ifdef __cplusplus
 }

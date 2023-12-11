@@ -38,11 +38,11 @@ USA
 #include "keypadTGDS.h"
 #include "global_settings.h"
 #include <stdio.h>
+#include <math.h>
 #include "posixHandleTGDS.h"
 #include "TGDSMemoryAllocator.h"
 #include "videoGL.h"
 #include "videoTGDS.h"
-#include "spitscTGDS.h"
 #include "Suzanne.h"
 #include "cafe.h"
 
@@ -258,12 +258,12 @@ int main(int argc, char **argv) {
 		glMatrixMode(GL_POSITION);
 		glLoadIdentity();
 		
-		gluLookAt(	1.0, 1.0, camDist,		//camera possition 
+		gluLookAt(	0.5, 0.5, camDist,		//camera possition 
 				0.0, 0.0, 0.0,		//look at
 				0.0, 1.0, 0.0		//up
 		);
 		
-		glTranslatef32(0, 0, 0.0);
+		glTranslatef32(0, 0, 0);
 		glRotateXi(rotateX);
 		glRotateYi(rotateY);
 		GLfloat mat_emission[]   = { 31, 31, 31, 0 };
@@ -293,13 +293,303 @@ int main(int argc, char **argv) {
 	}
 }
 
-int InitGL()										// All Setup For OpenGL Goes Here
-{
+void InitGL(){
+#ifdef _MSC_VER
+	// initialise glut
+	glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
+	glutInitWindowSize(width, height);
+    glutInitWindowPosition(100, 100);
+	glutCreateWindow("TGDS Project through OpenGL (GLUT)");
+	glutDisplayFunc(drawScene);
+	glutReshapeFunc(ReSizeGLScene);
+	glutKeyboardFunc(keyboard);
+    glutSpecialFunc(keyboardSpecial);
+	setVSync(true);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    float pos_light[4] = { 5.0f, 5.0f, 10.0f, 0.0f };
+    glLightfv(GL_LIGHT0, GL_POSITION, pos_light);
+    glEnable(GL_LIGHT0);
+	glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+	glDisable(GL_LIGHTING);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+#endif
+
+#ifdef ARM9
 	int TGDSOpenGLDisplayListWorkBufferSize = (256*1024);
-	glInit(TGDSOpenGLDisplayListWorkBufferSize); //NDSDLUtils: Initializes a new videoGL context	
+	glInit(TGDSOpenGLDisplayListWorkBufferSize); //NDSDLUtils: Initializes a new videoGL context
+	
 	glClearColor(255,255,255);		// White Background
 	glClearDepth(0x7FFF);		// Depth Buffer Setup
-	glEnable(GL_ANTIALIAS);
-	glEnable(GL_TEXTURE_2D); // Enable Texture Mapping 
-	glEnable(GL_BLEND);
+	glEnable(GL_ANTIALIAS|GL_TEXTURE_2D|GL_BLEND); // Enable Texture Mapping + light #0 enabled per scene
+
+	glDisable(GL_LIGHT0|GL_LIGHT1|GL_LIGHT2|GL_LIGHT3);
+
+	setTGDSARM9PrintfCallback((printfARM9LibUtils_fn)&TGDSDefaultPrintf2DConsole); //Redirect to default TGDS printf Console implementation
+	menuShow();
+	
+	REG_IE |= IRQ_VBLANK;
+	glReset(); //Depend on GX stack to render scene
+	glClearColor(0,35,195);		// blue green background colour
+
+	/* TGDS 1.65 OpenGL 1.1 Initialization */
+	ReSizeGLScene(255, 191);
+	glMaterialShinnyness();
+
+	//#1: Load a texture and map each one to a texture slot
+	/*
+	u32 arrayOfTextures[7];
+	arrayOfTextures[0] = (u32)&apple; //0: apple.bmp  
+	arrayOfTextures[1] = (u32)&boxbitmap; //1: boxbitmap.bmp  
+	arrayOfTextures[2] = (u32)&brick; //2: brick.bmp  
+	arrayOfTextures[3] = (u32)&grass; //3: grass.bmp
+	arrayOfTextures[4] = (u32)&menu; //4: menu.bmp
+	arrayOfTextures[5] = (u32)&snakegfx; //5: snakegfx.bmp
+	arrayOfTextures[6] = (u32)&Texture_Cube; //6: Texture_Cube.bmp
+	int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&texturesSnakeGL, 7); //Implements both glBindTexture and glTexImage2D 
+	int i = 0;
+	for(i = 0; i < texturesInSlot; i++){
+		printf("Texture loaded: %d:textID[%d] Size: %d", i, texturesSnakeGL[i], getTextureBaseFromTextureSlot(activeTexture));
+	}
+	*/
+#endif
+
+	glEnable(GL_COLOR_MATERIAL);	//allow to mix both glColor3f + light sources when lighting is enabled (glVertex + glNormal3f)
+
+
+	glDisable(GL_CULL_FACE); 
+	glCullFace (GL_NONE);
+
+	setupTGDSProjectOpenGLDisplayLists();
+}
+
+GLint DLEN2DTEX = -1;
+GLint DLDIS2DTEX = -1;
+GLint DLSOLIDCUBE05F = -1;
+
+#ifdef ARM9
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__((optnone))
+#endif
+#endif
+void setupTGDSProjectOpenGLDisplayLists(){
+	// Generate Different Lists
+	// 1: enable_2D_texture()
+	DLEN2DTEX=(GLint)glGenLists(1);							
+	glNewList(DLEN2DTEX,GL_COMPILE);						
+	{
+		GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f }; 
+		GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f }; 
+		GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f }; 
+		GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f }; 
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	   
+		glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient); 
+        glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse); 
+        glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); 
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position); 
+		
+		
+		{
+			#ifdef WIN32
+			GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f }; //WIN32
+			GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f }; //WIN32
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
+			GLfloat high_shininess[] = { 0.0f }; //WIN32
+			#endif
+			#ifdef ARM9
+			GLfloat mat_ambient[]    = { 60.0f, 60.0f, 60.0f, 60.0f }; //NDS
+			GLfloat mat_diffuse[]    = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat high_shininess[] = { 128.0f }; //NDS
+			#endif
+			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   mat_ambient);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   mat_diffuse); 
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  mat_specular); 
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, high_shininess);
+		}
+	}
+	
+	glEndList();
+	DLDIS2DTEX=glGenLists(1);
+
+	// 2: disable_2D_texture()
+	glNewList(DLDIS2DTEX,GL_COMPILE);
+	{
+		GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
+        GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
+        GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		
+		glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient); 
+        glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse); 
+        glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); 
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position); 
+
+		
+		{
+			#ifdef ARM9
+			GLfloat mat_ambient[]    = { 60.0f, 60.0f, 60.0f, 60.0f }; //NDS
+			GLfloat mat_diffuse[]    = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //NDS
+			GLfloat high_shininess[] = { 128.0f }; //NDS
+			#endif
+
+			#ifdef WIN32
+			GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f }; //WIN32
+			GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f }; //WIN32
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
+			GLfloat high_shininess[] = { 100.0f }; //WIN32
+			#endif
+			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   mat_ambient); 
+			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   mat_diffuse);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  mat_specular);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, high_shininess);
+		}
+	}
+	glEndList();
+	DLSOLIDCUBE05F=glGenLists(1);
+
+	// 3: draw solid cube: 0.5f()
+	glNewList(DLSOLIDCUBE05F, GL_COMPILE);
+	{
+		float size = 0.5f;
+		GLfloat n[6][3] =
+		{
+			{-1.0f, 0.0f, 0.0f},
+			{0.0f, 1.0f, 0.0f},
+			{1.0f, 0.0f, 0.0f},
+			{0.0f, -1.0f, 0.0f},
+			{0.0f, 0.0f, 1.0f},
+			{0.0f, 0.0f, -1.0f}
+		};
+		GLint faces[6][4] =
+		{
+			{0, 1, 2, 3},
+			{3, 2, 6, 7},
+			{7, 6, 5, 4},
+			{4, 5, 1, 0},
+			{5, 6, 2, 1},
+			{7, 4, 0, 3}
+		};
+		GLfloat v[8][3];
+		GLint i;
+
+		v[0][0] = v[1][0] = v[2][0] = v[3][0] = -size / 2;
+		v[4][0] = v[5][0] = v[6][0] = v[7][0] = size / 2;
+		v[0][1] = v[1][1] = v[4][1] = v[5][1] = -size / 2;
+		v[2][1] = v[3][1] = v[6][1] = v[7][1] = size / 2;
+		v[0][2] = v[3][2] = v[4][2] = v[7][2] = -size / 2;
+		v[1][2] = v[2][2] = v[5][2] = v[6][2] = size / 2;
+
+		for (i = 5; i >= 0; i--)
+		{
+			glBegin(GL_QUADS);
+				glNormal3fv(&n[i][0]);
+				glTexCoord2f(0, 0);
+				glVertex3fv(&v[faces[i][0]][0]);
+				glTexCoord2f(1, 0);
+				glVertex3fv(&v[faces[i][1]][0]);
+				glTexCoord2f(1, 1);
+				glVertex3fv(&v[faces[i][2]][0]);
+				glTexCoord2f(0, 1);
+				glVertex3fv(&v[faces[i][3]][0]);
+			glEnd();
+		}
+	}
+	glEndList();
+	
+	DLSPHERE=glGenLists(1);
+	//drawSphere(); -> NDS GX Implementation
+	glNewList(DLSPHERE, GL_COMPILE); //recompile a light-based sphere as OpenGL DisplayList for rendering on upper screen later
+	{
+		float r=1; 
+		int lats=8; 
+		int longs=8;
+		int i, j;
+		for (i = 0; i <= lats; i++) {
+			float lat0 = M_PI * (-0.5 + (float)(i - 1) / lats);
+			float z0 = sin((float)lat0);
+			float zr0 = cos((float)lat0);
+
+			float lat1 = M_PI * (-0.5 + (float)i / lats);
+			float z1 = sin((float)lat1);
+			float zr1 = cos((float)lat1);
+			glBegin(GL_TRIANGLE_STRIP);
+			for (j = 0; j <= longs; j++) {
+				float lng = 2 * M_PI * (float)(j - 1) / longs;
+				float x = cos(lng);
+				float y = sin(lng);
+				glNormal3f(x * zr0, y * zr0, z0);
+				glVertex3f(r * x * zr0, r * y * zr0, r * z0);
+				glNormal3f(x * zr1, y * zr1, z1);
+				glVertex3f(r * x * zr1, r * y * zr1, r * z1);
+			}
+			glEnd();
+		}
+	}
+	glEndList();
+}
+
+#ifdef ARM9
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__((optnone))
+#endif
+#endif
+GLvoid ReSizeGLScene(GLsizei widthIn, GLsizei heightIn)		// resizes the window (GLUT & TGDS GL)
+{
+	#ifdef WIN32 //todo: does this work on NDS?
+	if (heightIn==0)										// Prevent A Divide By Zero By
+	{
+		heightIn=1;										// Making Height Equal One
+	}
+
+	glViewport(0,0,widthIn,heightIn);						// Reset The Current Viewport
+
+	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
+	glLoadIdentity();									// Reset The Projection Matrix
+
+	// Calculate The Aspect Ratio Of The Window
+	gluPerspective(45.0f,(GLfloat)widthIn/(GLfloat)heightIn,0.1f,100.0f);
+
+	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
+	glLoadIdentity();									// Reset The Modelview Matrix
+	#endif
+
+	#ifdef ARM9
+	if (heightIn==0)										// Prevent A Divide By Zero By
+	{
+		heightIn=1;										// Making Height Equal One
+	}
+
+	glViewport(0,0,widthIn,heightIn);						// Reset The Current Viewport
+
+	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
+	glLoadIdentity();									// Reset The Projection Matrix
+
+	// Calculate The Aspect Ratio Of The Window
+	gluPerspective(45.0f,(GLfloat)widthIn/(GLfloat)heightIn,0.1f,100.0f);
+
+	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
+	glLoadIdentity();									// Reset The Modelview Matrix
+	#endif
 }
