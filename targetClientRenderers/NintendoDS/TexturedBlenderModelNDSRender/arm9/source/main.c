@@ -63,22 +63,71 @@ USA
 #include "global_settings.h"
 #include "posixHandleTGDS.h"
 #include "TGDSMemoryAllocator.h"
-
-#include "Texture_Cube.h"
-#include "Texture_Cube_Exported.h"
+#include "keypadTGDS.h"
+#include "GXPayload.h" //required to flush the GX<->DMA<->FIFO circuit on real hardware
+#include "Texture_Cube_metal.h"
+#include "Texture_Cube_wood.h"
+#include "Texture_Cube_logo.h"
 #include "videoGL.h"
 #include "videoTGDS.h"
 #include "math.h"
 #include "16bpp.h" 
 #include "imagepcx.h"
+#include "Cube.h"
 
 float rotateX = 0.0;
 float rotateY = 0.0;
 float camDist = 0.3*4;
-//3D Cube end
-
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 
+//OpenGL DL start
+GLuint	box;				// Storage For The Box Display List
+GLuint	top;				// Storage For The Top Display List
+GLuint	xloop;				// Loop For X Axis
+GLuint	yloop;				// Loop For Y Axis
+
+GLfloat	xrot;				// Rotates Cube On The X Axis
+GLfloat	yrot;				// Rotates Cube On The Y Axis
+
+GLfloat boxcol[5][3]=
+{
+	{1.0f,0.0f,0.0f},{1.0f,0.5f,0.0f},{1.0f,1.0f,0.0f},{0.0f,1.0f,0.0f},{0.0f,1.0f,1.0f}
+};
+
+GLfloat topcol[5][3]=
+{
+	{.5f,0.0f,0.0f},{0.5f,0.25f,0.0f},{0.5f,0.5f,0.0f},{0.0f,0.5f,0.0f},{0.0f,0.5f,0.5f} 
+};
+
+float camMov = -1.0;
+//OpenGL DL end
+
+//true: pen touch
+//false: no tsc activity
+bool get_pen_delta( int *dx, int *dy ){
+	static int prev_pen[2] = { 0x7FFFFFFF, 0x7FFFFFFF };
+	
+	// TSC Test.
+	struct touchPosition touch;
+	XYReadScrPosUser(&touch);
+	
+	if( (touch.px == 0) && (touch.py == 0) ){
+		prev_pen[0] = prev_pen[1] = 0x7FFFFFFF;
+		*dx = *dy = 0;
+		return false;
+	}
+	else{
+		if( prev_pen[0] != 0x7FFFFFFF ){
+			*dx = (prev_pen[0] - touch.px);
+			*dy = (prev_pen[1] - touch.py);
+		}
+		prev_pen[0] = touch.px;
+		prev_pen[1] = touch.py;
+	}
+	return true;
+}
+
+int isOpenGLDisplayList = 0;
 //Back to loader, based on Whitelisted DLDI names
 static char curLoaderNameFromDldiString[MAX_TGDSFILENAME_LENGTH+1];
 static inline char * canGoBackToLoader(){
@@ -104,16 +153,21 @@ void menuShow(){
 	printf("Button (Start): File browser ");
 	printf("    Button (A) Load TGDS/devkitARM NDS Binary. ");
 	printf("                              ");
-	printf("(Select): back to Loader. >%d", TGDSPrintfColor_Green);
 	printf("Available heap memory: %d", getMaxRam());
-	printf("Select: this menu");
-}
-
-//new: this bootcode will run from VRAM, once the NDSBinary context has been created and handled by the reload bootcode.
-//generates a table of sectors out of a given file. It has the ARM7 binary and ARM9 binary
-bool ReloadNDSBinaryFromContext(char * filename)  {
 	
-	return false;
+	printf("D-PAD Left/Right: toggle OpenGL DisplayList / >%d", TGDSPrintfColor_Yellow);
+	printf("                     Blender 3D Model >%d", TGDSPrintfColor_Yellow);
+	printf("Mode: ");
+	
+	if(isOpenGLDisplayList == 0){
+		printf("     [OpenGL DisplayList: Metal]  >%d", TGDSPrintfColor_Cyan);	
+	}
+	else if(isOpenGLDisplayList == 1){
+		printf("     [OpenGL DisplayList: ToolchainGenericDS]  >%d", TGDSPrintfColor_Cyan);	
+	}
+	else{
+		printf("     [Blender 3D Model: Wooden]  >%d", TGDSPrintfColor_Yellow);
+	}
 }
 
 int internalCodecType = SRC_NONE;//Internal because WAV raw decompressed buffers are used if Uncompressed WAV or AD
@@ -128,14 +182,11 @@ void closeSoundUser(){
 char args[8][MAX_TGDSFILENAME_LENGTH];
 char *argvs[8];
 
-int texID;
-
 int main(int argc, char **argv)   {
 	
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
-	bool isTGDSCustomConsole = true;	//set default console or custom console
+	bool isTGDSCustomConsole = false;	//set default console or custom console
 	GUI_init(isTGDSCustomConsole);
-	GUI_clear();
 	
 	//xmalloc init removes args, so save them
 	int i = 0;
@@ -146,6 +197,10 @@ int main(int argc, char **argv)   {
 	bool isCustomTGDSMalloc = true;
 	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc, TGDSDLDI_ARM7_ADDRESS));
 	sint32 fwlanguage = (sint32)getLanguage();
+	
+	isTGDSCustomConsole = true;	//set default console or custom console
+	GUI_init(isTGDSCustomConsole);
+	GUI_clear();
 	
 	//argv destroyed here because of xmalloc init, thus restore them
 	for(i = 0; i < argc; i++){
@@ -257,53 +312,176 @@ int main(int argc, char **argv)   {
 	REG_IME = 1;
 	
 	menuShow();
-	
-	//gl start
-	{
-		InitGL();
-		setOrientation(ORIENTATION_0, true);
-		
-		//set mode 0, enable BG0 and set it to 3D
-		SETDISPCNT_MAIN(MODE_0_3D);
-		
-		//this should work the same as the normal gl call
-		glViewport(0,0,255,191);	
-		glClearColor(0,0,0);
-		glClearDepth(0x7FFF);
-		
-		glGenTextures(1, &texID);
-		glBindTexture(0, texID);
-		glTexImage2D(0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, TEXGEN_TEXCOORD, (u8*)_6bppBitmap);		
-		
-		//Direct Tex (PCX 128x128, using internal TGDS texture names buffer)
-		//LoadGLSingleTextureAuto((u32)&Texture_Cube, (int *)&texID, texID);
-		
-		//Multiple 64x64 textures as BPM
-		
-		//Load 2 textures and map each one to a texture slot
-		/*
-		u32 arrayOfTextures[1];
-		arrayOfTextures[0] = (u32)&Texture_Cube;
-		int textureArrayNDS[2]; //0 : Cube tex / 1 : Cellphone tex
-		int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&textureArrayNDS, 1);
-		for(i = 0; i < texturesInSlot; i++){
-			printf("tex: %d:textID[%d]", i, textureArrayNDS[i]);
-		}
-		*/
-
-		glReset();
-		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_ANTIALIAS);
-		glEnable(GL_BLEND);
-	}
-	//gl end
-	
-	char * arg0 = (0x02280000 - (MAX_TGDSFILENAME_LENGTH+1));
-	ReloadNDSBinaryFromContext(arg0);
+	InitGL();
 	
 	while (1){
+		
+		scanKeys();
+		if(keysDown() & KEY_LEFT){
+			isOpenGLDisplayList--;
+			if(isOpenGLDisplayList < 0){
+				isOpenGLDisplayList=0;
+			}
+			while(keysHeld() & KEY_LEFT){
+				scanKeys();
+				swiDelay(1);
+			}
+			menuShow();
+		}
+		if(keysDown() & KEY_RIGHT){
+			isOpenGLDisplayList++;
+			if(isOpenGLDisplayList > 2){
+				isOpenGLDisplayList = 2;
+			}
+			while(keysHeld() & KEY_RIGHT){
+				scanKeys();
+				swiDelay(1);
+			}
+			menuShow();
+		}
+		
+		
+		//any floating point gl call is being converted to fixed prior to being implemented
+		gluPerspective(30, 256.0 / 192.0, 0.1, 70);
+		gluLookAt(	0.0, 0.0, camDist,		//camera possition 
+					0.0, 0.0, 0.0,		//look at
+					0.0, 1.0, 0.0);		//up
+		glPushMatrix();
+
+		//move it away from the camera
+		glTranslate3f32(0, 0, floattof32(-1));
+				
+		glRotateX(rotateX);
+		glRotateY(rotateY);
+		
+		glMatrixMode(GL_TEXTURE);
+		glLoadIdentity();	
+		glMatrixMode(GL_MODELVIEW);
+		
+		glMaterialShinnyness();
+		updateGXLights(); //Update GX 3D light scene!
+		
+		if(isOpenGLDisplayList == 0){
+			glBindTexture( 0, textureSizePixelCoords[Texture_MetalCubeID].textureIndex);
+		}
+		else if(isOpenGLDisplayList == 1){
+			glBindTexture( 0, textureSizePixelCoords[Texture_LogoCubeID].textureIndex);
+		}
+		else {
+			glBindTexture( 0, textureSizePixelCoords[Texture_WoodenCubeID].textureIndex);
+		}
+
+		GLfloat light_ambient[]  = { 1.0f, 1.0f, 1.0f, 1.0f };			
+		//https://www.glprogramming.com/red/chapter05.html
+		//The GL_DIFFUSE parameter probably most closely correlates with what you naturally think of as "the color of a light." 
+		//It defines the RGBA color of the diffuse light that a particular light source adds to a scene. By default, GL_DIFFUSE is (1.0, 1.0, 1.0, 1.0) for GL_LIGHT0, 
+		//which produces a bright, white light as shown in the left side of "Plate 13" in Appendix I. 
+		//The default value for any other light (GL_LIGHT1, ... , GL_LIGHT7) is (0.0, 0.0, 0.0, 0.0).
+		GLfloat light_diffuse[]  = { 31.0f, 31.0f, 31.0f, 0.0f };
+
+		GLfloat light_specular[] = { 1.0f, 1.0f, xrot, 1.0f };
+		GLfloat light_position[] = { 0.0f, -1.0f, 0.0f, 0.0f };
+		glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient); //GX unused
+		glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
+		glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); //GX unused
+		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+		
+		{
+			#ifdef ARM9
+			GLfloat mat_ambient[]    = { 8.0f, 8.0f, 8.0f, 0.0f }; //NDS
+			GLfloat mat_diffuse[]    = { 16.0f, 16.0f, 16.0f, 0.0f }; //NDS
+			GLfloat mat_specular[]   = { 8.0f, 8.0f, 8.0f, 0.0f }; //NDS
+			GLfloat mat_emission[]   = { 5.0f, 5.0f, 5.0f, 0.0f }; //NDS
+			GLfloat high_shininess[] = { 128.0f }; //NDS
+			#endif
+
+			#ifdef WIN32
+			GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f }; //WIN32
+			GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f }; //WIN32
+			GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
+			GLfloat mat_emission[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
+			GLfloat high_shininess[] = { 100.0f }; //WIN32
+			#endif
+			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   mat_ambient); 
+			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   mat_diffuse);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  mat_specular);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION,  mat_emission);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, high_shininess);
+		}
+		GLfloat args[4];
+		args[0] = (GLfloat)RGB15(31,31,31);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, (const GLfloat*)&args);	
+		
+		if(isOpenGLDisplayList == 2){
+			glCallListGX((u32*)&Cube);
+		}
+		else{
+			int pen_delta[2];
+			bool isTSCActive = get_pen_delta( &pen_delta[0], &pen_delta[1] );
+			if( isTSCActive == false ){
+				printfCoords(0, 16, " No TSC Activity ----");
+				rotateX = 0.0;
+				rotateY = 0.0;
+			}
+			else{
+				printfCoords(0, 16, "TSC Activity ----");
+				rotateX = pen_delta[0];
+				rotateY = pen_delta[1];
+				if(yrot > 0){
+					yrot-=rotateY;
+				}
+				else{
+					yrot+=rotateY;
+				}
+				
+				if(xrot > 0){
+					xrot-=rotateX;
+				}
+				else{
+					xrot+=rotateX;
+				}
+			}
+			if (keysDown() & KEY_UP)
+			{
+				camMov-=2.8f;
+			}
+			if (keysDown() & KEY_DOWN)
+			{
+				camMov+=2.8f;
+			}
+			
+			for (yloop=1;yloop<6;yloop++){
+				for (xloop=0;xloop<yloop;xloop++){
+					// Reset The View
+					glLoadIdentity();
+					glTranslatef(1.4f+(((float)xloop)*2.8f)-(((float)yloop)*1.4f),((6.0f-((float)yloop))*2.4f)-7.3f,-20.0f + camMov);
+					
+					glRotatef(45.0f-(2.0f*yloop)+xrot,1.0f,0.0f,0.0f);
+					glRotatef(45.0f+yrot,0.0f,1.0f,0.0f);
+
+					//Run the precompiled standard Open GL 1.1 Display List here
+					glColor3fv(boxcol[yloop-1]);
+					glCallList(box);
+					glColor3fv(topcol[yloop-1]);
+					glCallList(top);
+				}
+			}
+		}
+		
+		glPopMatrix(1);
+		rotateX += 0.3;
+		rotateY += 0.3;
+		
+		//swap framebuffers
+		#ifdef WIN32
+		glutSwapBuffers();
+		#endif
+
+		#ifdef ARM9
+		glFlush();
 		handleARM9SVC();	/* Do not remove, handles TGDS services */
-		IRQWait(0, IRQ_VBLANK);
+		IRQVBlankWait();
+		#endif
 	}
 }
 
@@ -336,48 +514,45 @@ void InitGL(){
 #ifdef ARM9
 	int TGDSOpenGLDisplayListWorkBufferSize = (256*1024);
 	glInit(TGDSOpenGLDisplayListWorkBufferSize); //NDSDLUtils: Initializes a new videoGL context
-	
-	glClearColor(255,255,255);		// White Background
 	glClearDepth(0x7FFF);		// Depth Buffer Setup
-	glEnable(GL_ANTIALIAS|GL_TEXTURE_2D|GL_BLEND); // Enable Texture Mapping + light #0 enabled per scene
-
+	// Enable Texture Mapping + light #0 per scene
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_ANTIALIAS);
+	glEnable(GL_BLEND);
 	glDisable(GL_LIGHT0|GL_LIGHT1|GL_LIGHT2|GL_LIGHT3);
-
+	glEnable(GL_LIGHT0);
 	setTGDSARM9PrintfCallback((printfARM9LibUtils_fn)&TGDSDefaultPrintf2DConsole); //Redirect to default TGDS printf Console implementation
-	menuShow();
-	
 	REG_IE |= IRQ_VBLANK;
-	glReset(); //Depend on GX stack to render scene
 	glClearColor(0,35,195);		// blue green background colour
-
+	setOrientation(ORIENTATION_0, true);
+	
+	//set mode 0, enable BG0 and set it to 3D
+	SETDISPCNT_MAIN(MODE_0_3D);
+	
 	/* TGDS 1.65 OpenGL 1.1 Initialization */
 	ReSizeGLScene(255, 191);
-	glMaterialShinnyness();
-
-	//#1: Load a texture and map each one to a texture slot
-	/*
-	u32 arrayOfTextures[7];
-	arrayOfTextures[0] = (u32)&apple; //0: apple.bmp  
-	arrayOfTextures[1] = (u32)&boxbitmap; //1: boxbitmap.bmp  
-	arrayOfTextures[2] = (u32)&brick; //2: brick.bmp  
-	arrayOfTextures[3] = (u32)&grass; //3: grass.bmp
-	arrayOfTextures[4] = (u32)&menu; //4: menu.bmp
-	arrayOfTextures[5] = (u32)&snakegfx; //5: snakegfx.bmp
-	arrayOfTextures[6] = (u32)&Texture_Cube; //6: Texture_Cube.bmp
-	int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (int*)&texturesSnakeGL, 7); //Implements both glBindTexture and glTexImage2D 
+	
+	//glGenTextures(1, &textureSizePixelCoords[Texture_CubeID].textureIndex);
+	//glBindTexture(0, textureSizePixelCoords[Texture_CubeID].textureIndex);
+	//glTexImage2D(0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, TEXGEN_TEXCOORD, (u8*)_6bppBitmap);		
+	
+	//Multiple 64x64 textures as PCX/BMP
+	//Load 2 textures and map each one to a texture slot
+	u32 arrayOfTextures[3];
+	arrayOfTextures[0] = (u32)&Texture_Cube_metal;
+	arrayOfTextures[1] = (u32)&Texture_Cube_wood;
+	arrayOfTextures[2] = (u32)&Texture_Cube_logo;
+	int texturesInSlot = LoadLotsOfGLTextures((u32*)&arrayOfTextures, (sizeof(arrayOfTextures)/sizeof(u32)) );
 	int i = 0;
 	for(i = 0; i < texturesInSlot; i++){
-		printf("Texture loaded: %d:textID[%d] Size: %d", i, texturesSnakeGL[i], getTextureBaseFromTextureSlot(activeTexture));
+		printf("Tex. index: %d: Tex. name[%d]", i, getTextureNameFromIndex(i));
 	}
-	*/
+	glCallListGX((u32*)&GXPayload); //Run this payload once to force cache flushes on DMA GXFIFO
 #endif
 
 	glEnable(GL_COLOR_MATERIAL);	//allow to mix both glColor3f + light sources when lighting is enabled (glVertex + glNormal3f)
-
-
 	glDisable(GL_CULL_FACE); 
 	glCullFace (GL_NONE);
-
 	setupTGDSProjectOpenGLDisplayLists();
 }
 
@@ -413,7 +588,6 @@ void setupTGDSProjectOpenGLDisplayLists(){
         glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse); 
         glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular); 
         glLightfv(GL_LIGHT0, GL_POSITION, light_position); 
-		
 		
 		{
 			#ifdef WIN32
@@ -559,6 +733,55 @@ void setupTGDSProjectOpenGLDisplayLists(){
 		}
 	}
 	glEndList();
+	
+	
+	////////////////////////////OpenGL Display List init
+	box=glGenLists(2);	// Generate 2 Different Lists
+	glNewList(box,GL_COMPILE);							// Start With The Box List
+		glBegin(GL_QUADS);
+			// Bottom Face
+			glNormal3f(0.5f,-1.0f, 0.0f);
+			glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+			glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
+			glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
+			glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
+			// Front Face
+			glNormal3f( 1.0f, 1.0f, 1.0f);
+			glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
+			glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
+			glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
+			glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
+			// Back Face
+			glNormal3f( 1.0f, 1.0f,-1.0f);
+			glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+			glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
+			glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
+			glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
+			// Right face
+			glNormal3f( 1.0f, 0.0f, 0.0f);
+			glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
+			glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
+			glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
+			glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
+			// Left Face
+			glNormal3f(-1.0f, 0.0f, 1.0f);
+			glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+			glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
+			glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
+			glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
+		glEnd();
+	glEndList();
+	top=box+1;											// Storage For "Top" Is "Box" Plus One
+	glNewList(top,GL_COMPILE); // Now The "Top" Display List
+		glBegin(GL_QUADS);
+			// Top Face
+			glNormal3f( 1.0f, 1.0f, 1.0f);
+			glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
+			glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
+			glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
+			glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
+		glEnd();
+	glEndList();
 }
 
 #ifdef ARM9
@@ -571,12 +794,11 @@ __attribute__((optnone))
 #endif
 GLvoid ReSizeGLScene(GLsizei widthIn, GLsizei heightIn)		// resizes the window (GLUT & TGDS GL)
 {
-	#ifdef WIN32 //todo: does this work on NDS?
+	#ifdef WIN32
 	if (heightIn==0)										// Prevent A Divide By Zero By
 	{
 		heightIn=1;										// Making Height Equal One
 	}
-
 	glViewport(0,0,widthIn,heightIn);						// Reset The Current Viewport
 
 	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
