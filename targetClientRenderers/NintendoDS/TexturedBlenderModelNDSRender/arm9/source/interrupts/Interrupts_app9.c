@@ -26,10 +26,6 @@ USA
 #include "interrupts.h"
 #include "utilsTGDS.h"
 #include "spifwTGDS.h"
-#include "videoGL.h"
-#include "videoTGDS.h"
-#include "math.h"
-#include "Cube.h"
 
 //User Handler Definitions
 
@@ -97,90 +93,7 @@ void VblankUser(){
 __attribute__((section(".itcm")))
 #endif
 void VcounterUser(){
-	//any floating point gl call is being converted to fixed prior to being implemented
-	gluPerspective(30, 256.0 / 192.0, 0.1, 70);
-
-	gluLookAt(	0.0, 0.0, camDist,		//camera possition 
-				0.0, 0.0, 0.0,		//look at
-				0.0, 1.0, 0.0);		//up
 	
-	glLight(0, RGB15(31,31,31) , 0,				  floattov10(-1.0),		 0);
-	glLight(1, RGB15(31,0,31),   0,				  floattov10(1) - 1,			 0);
-	glLight(2, RGB15(0,31,0) ,   floattov10(-1.0), 0,					 0);
-	glLight(3, RGB15(0,0,31) ,   floattov10(1.0) - 1,  0,					 0);
-
-	glPushMatrix();
-
-	//move it away from the camera
-	glTranslate3f32(0, 0, floattof32(-1));
-			
-	glRotateX(rotateX);
-	glRotateY(rotateY);
-	
-	glMatrixMode(GL_TEXTURE);
-	glLoadIdentity();
-	
-	glMatrixMode(GL_MODELVIEW);
-
-	/*
-	glMaterialfLegacy(GL_AMBIENT, RGB15(8,8,8));
-	glMaterialfLegacy(GL_DIFFUSE, RGB15(16,16,16));
-	glMaterialfLegacy(GL_SPECULAR, BIT(15) | RGB15(8,8,8));
-	glMaterialfLegacy(GL_EMISSION, RGB15(5,5,5));
-	*/
-
-	{
-		#ifdef ARM9
-		GLfloat mat_ambient[]    = { 8.0f, 8.0f, 8.0f, 0.0f }; //NDS
-		GLfloat mat_diffuse[]    = { 16.0f, 16.0f, 16.0f, 0.0f }; //NDS
-		GLfloat mat_specular[]   = { 8.0f, 8.0f, 8.0f, 0.0f }; //NDS
-		GLfloat mat_emission[]   = { 5.0f, 5.0f, 5.0f, 0.0f }; //NDS
-		GLfloat high_shininess[] = { 128.0f }; //NDS
-		#endif
-
-		#ifdef WIN32
-		GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f }; //WIN32
-		GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f }; //WIN32
-		GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
-		GLfloat mat_emission[]   = { 1.0f, 1.0f, 1.0f, 1.0f }; //WIN32
-		GLfloat high_shininess[] = { 100.0f }; //WIN32
-		#endif
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   mat_ambient); 
-		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   mat_diffuse);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  mat_specular);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION,  mat_emission);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, high_shininess);
-	}
-	
-	//ds uses a table for shinyness..this generates a half-ass one
-	glMaterialShinnyness();
-
-	//not a real gl function and will likely change
-	glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK | POLY_FORMAT_LIGHT0 | POLY_FORMAT_LIGHT1 | 
-												POLY_FORMAT_LIGHT2 | POLY_FORMAT_LIGHT3 ) ;
-	
-	u32 keypad = keysHeld();
-	
-	/*
-	if(keypad & KEY_UP) rotateX += 3;
-	if(keypad & KEY_DOWN) rotateX -= 3;
-	if(keypad & KEY_LEFT) rotateY += 3;
-	if(keypad & KEY_RIGHT) rotateY -= 3;
-	
-	if(keypad & KEY_A) camDist += 0.3;
-	if(keypad & KEY_B) camDist -= 0.3;
-	*/
-	
-	glBindTexture(0, texID);
-
-	glCallListGX(&Cube);
-	
-	glPopMatrix(1);
-		
-	glFlush();
- 	
-	rotateX += 0.3;
-	rotateY += 0.3;
 }
 
 

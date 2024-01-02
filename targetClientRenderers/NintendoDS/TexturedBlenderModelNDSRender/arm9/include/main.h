@@ -28,6 +28,10 @@ USA
 #include "utilsTGDS.h"
 #include "videoGL.h"
 
+#define Texture_MetalCubeID ((int)0)
+#define Texture_WoodenCubeID ((int)1)
+#define Texture_LogoCubeID ((int)2)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,12 +52,9 @@ extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 extern bool fillNDSLoaderContext(char * filename);
 extern struct FileClassList * thisFileList;
 
-extern int textureID ;
 extern float rotateX ;
 extern float rotateY ;
 extern float camDist ;
-extern int texID;
-
 
 extern void InitGL();
 
@@ -63,6 +64,21 @@ extern GLint DLDIS2DTEX;
 extern GLint DLSOLIDCUBE05F;
 extern void setupTGDSProjectOpenGLDisplayLists();
 extern GLvoid ReSizeGLScene(GLsizei widthIn, GLsizei heightIn);
+
+extern int isOpenGLDisplayList;
+extern bool get_pen_delta( int *dx, int *dy );
+
+extern GLuint	box;				// Storage For The Box Display List
+extern GLuint	top;				// Storage For The Top Display List
+extern GLuint	xloop;				// Loop For X Axis
+extern GLuint	yloop;				// Loop For Y Axis
+
+extern GLfloat	xrot;				// Rotates Cube On The X Axis
+extern GLfloat	yrot;				// Rotates Cube On The Y Axis
+
+extern GLfloat boxcol[5][3];
+extern GLfloat topcol[5][3];
+extern float camMov;
 
 #ifdef __cplusplus
 }
