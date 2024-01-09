@@ -80,9 +80,12 @@ void HblankUser(){
 __attribute__((section(".itcm")))
 #endif
 void VblankUser(){
-	boxMove+=0.3;
-	if(boxMove > 1000000000.0){
-		boxMove = 0.1;
+	struct sIPCSharedTGDSSpecific* TGDSUSERIPC = getsIPCSharedTGDSSpecific();
+	if(TGDSUSERIPC->frameCounter9 < 60){
+		TGDSUSERIPC->frameCounter9++;
+	}
+	else{
+		TGDSUSERIPC->frameCounter9 = 0;
 	}
 }
 
@@ -90,7 +93,7 @@ void VblankUser(){
 __attribute__((section(".itcm")))
 #endif
 void VcounterUser(){
-
+	
 }
 
 
