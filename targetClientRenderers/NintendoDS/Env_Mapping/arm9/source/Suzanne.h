@@ -1,5 +1,6 @@
+#include "typedefsTGDS.h"
 #include "videoGL.h"
-#include "videoTGDS.h"
+#include "imagepcx.h"
 
 u32 Suzanne[] = {
 6891,
