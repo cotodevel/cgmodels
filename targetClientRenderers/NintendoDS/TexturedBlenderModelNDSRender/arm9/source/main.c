@@ -17,31 +17,6 @@ USA
 
 */
 
-/*---------------------------------------------------------------------------------
-
- 	Copyright (C) 2005
-		Jason Rogers (dovoto)
-		Dave Murphy (WinterMute)
-
-	This software is provided 'as-is', without any express or implied
-	warranty.  In no event will the authors be held liable for any
-	damages arising from the use of this software.
-
-	Permission is granted to anyone to use this software for any
-	purpose, including commercial applications, and to alter it and
-	redistribute it freely, subject to the following restrictions:
-
-	1.	The origin of this software must not be misrepresented; you
-		must not claim that you wrote the original software. If you use
-		this software in a product, an acknowledgment in the product
-		documentation would be appreciated but is not required.
-	2.	Altered source versions must be plainly marked as such, and
-		must not be misrepresented as being the original software.
-	3.	This notice may not be removed or altered from any source
-		distribution.
-
----------------------------------------------------------------------------------*/
-
 #include "main.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
@@ -195,7 +170,7 @@ int main(int argc, char **argv)   {
 	}
 
 	bool isCustomTGDSMalloc = true;
-	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc, TGDSDLDI_ARM7_ADDRESS));
+	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(isCustomTGDSMalloc));
 	sint32 fwlanguage = (sint32)getLanguage();
 	
 	isTGDSCustomConsole = true;	//set default console or custom console
@@ -266,7 +241,7 @@ int main(int argc, char **argv)   {
 			//pass incoming launcher's ARGV0
 			char arg0[256];
 			int newArgc = 3;
-			if (argc > 2) {
+			if (argc > 4) {
 				printf(" ---- test");
 				printf(" ---- test");
 				printf(" ---- test");
@@ -289,12 +264,14 @@ int main(int argc, char **argv)   {
 			}
 			//debug end
 			
-			char thisArgv[4][MAX_TGDSFILENAME_LENGTH];
+			char thisArgv[5][MAX_TGDSFILENAME_LENGTH];
 			memset(thisArgv, 0, sizeof(thisArgv));
 			strcpy(&thisArgv[0][0], thisTGDSProject);	//Arg0:	This Binary loaded
 			strcpy(&thisArgv[1][0], curChosenBrowseFile);	//Arg1:	Chainload caller: TGDS-MB
-			strcpy(&thisArgv[2][0], thisTGDSProject);	//Arg2:	NDS Binary reloaded through ChainLoad
+			strcpy(&thisArgv[2][0], "0:/stub.bin");			//bugged arg slot
 			strcpy(&thisArgv[3][0], (char*)&arg0[0]);//Arg3: NDS Binary reloaded through ChainLoad's ARG0
+			strcpy(&thisArgv[4][0], thisTGDSProject);	//Arg4:	NDS Binary reloaded through ChainLoad
+			newArgc++;
 			addARGV(newArgc, (char*)&thisArgv);				
 			if(TGDSMultibootRunNDSPayload(curChosenBrowseFile) == false){ //should never reach here, nor even return true. Should fail it returns false
 				
@@ -304,13 +281,13 @@ int main(int argc, char **argv)   {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	REG_IME = 0;
-	MPUSet();
+	set0xFFFF0000FastMPUSettings();
 	//TGDS-Projects -> legacy NTR TSC compatibility
 	if(__dsimode == true){
 		TWLSetTouchscreenTWLMode();
 	}
 	REG_IME = 1;
-	
+	setupDisabledExceptionHandler();
 	menuShow();
 	InitGL();
 	
