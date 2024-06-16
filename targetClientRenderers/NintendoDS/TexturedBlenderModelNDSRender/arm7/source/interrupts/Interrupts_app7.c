@@ -27,6 +27,10 @@ USA
 #include "wifi_arm7.h"
 #include "main.h"
 
+//TGDS-MB v3 bootloader
+void bootfile(){
+}
+
 //User Handler Definitions
 
 #ifdef ARM9
