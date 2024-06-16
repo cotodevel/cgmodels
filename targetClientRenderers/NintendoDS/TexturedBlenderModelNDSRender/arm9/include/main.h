@@ -36,9 +36,6 @@ USA
 extern "C" {
 #endif
 
-extern char args[8][MAX_TGDSFILENAME_LENGTH];
-extern char *argvs[8];
-
 //TGDS Soundstreaming API
 extern int internalCodecType;
 extern struct fd * _FileHandleVideo; 
