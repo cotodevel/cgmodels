@@ -38,14 +38,22 @@ typedef struct sIPCSharedTGDSSpecific{
 //---------------------------------------------------------------------------------
 	uint32 frameCounter7;	//VBLANK counter7
 	uint32 frameCounter9;	//VBLANK counter9
+	char filename[256];
 }  IPCSharedTGDSSpecific	__attribute__((aligned (4)));
 
 //TGDS Memory Layout ARM7/ARM9 Cores
-#define TGDS_ARM7_MALLOCSTART (u32)(0x06000000)
-#define TGDS_ARM7_MALLOCSIZE (int)(64*1024)
-#define TGDSDLDI_ARM7_ADDRESS (u32)(TGDS_ARM7_MALLOCSTART + TGDS_ARM7_MALLOCSIZE)
-#define TGDS_ARM7_AUDIOBUFFER_STREAM (u32)(TGDSDLDI_ARM7_ADDRESS + (16*1024))
+#define TGDS_ARM7_MALLOCSTART (u32)(0x06018000)
+#define TGDS_ARM7_MALLOCSIZE (int)(16*1024)
+#define TGDSDLDI_ARM7_ADDRESS (u32)(TGDS_ARM7_MALLOCSTART + TGDS_ARM7_MALLOCSIZE)	//0x0601C000
+#define TGDS_ARM7_AUDIOBUFFER_STREAM (u32)(0x03800000)
+
 #define REQ_GBD_ARM7 (u32)(0xffff1988)
+
+#define FIFO_PLAYSOUNDSTREAM_FILE (u32)(0xFFFFABCB)
+#define FIFO_STOPSOUNDSTREAM_FILE (u32)(0xFFFFABCC)
+#define FIFO_PLAYSOUNDEFFECT_FILE (u32)(0xFFFFABCD)
+#define workBufferSoundEffect0 (s16*)((int)0x06000000 + (96*1024) - (4096*4))
+#define NO_VIDEO_PLAYBACK	1
 
 #ifdef ARM9
 static inline void initGDBSession(){

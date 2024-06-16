@@ -23,42 +23,47 @@ USA
 
 #include "typedefsTGDS.h"
 #include "dsregs.h"
-#include "spitscTGDS.h"
+#include "pff.h"
 #include "soundTGDS.h"
+#include "exceptionTGDS.h"
+
+#if defined(ARM7VRAMCUSTOMCORE)
+#include "ima_adpcm.h"
+#endif
+
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
+#if defined(ARM7VRAMCUSTOMCORE)
+extern IMA_Adpcm_Player backgroundMusicPlayer;	//Sound stream Background music Instance
+extern IMA_Adpcm_Player SoundEffect0Player;	//Sound stream Background music Instance
+#endif
 #endif
 
 extern int main(int argc, char **argv);
-extern void Wifi_initJuglak7();
-extern unsigned char MacAddr[6];
-extern int Wifi_TxCheck();
-extern void Wifi_MACCopy(u16 * dest, u32 MAC_Base, u32 MAC_Offset, u32 length);
-extern void Wifi_TxRawJuglak7(u16 * data, int datalen);
-extern void Wifi_SetChannel7Juglak(int channel);
+extern FATFS fileHandle;					// Petit-FatFs work area 
+extern char fname[256];
+extern char debugBuf7[256];
+extern bool stopSoundStreamUser();
+extern void bootfile();
+extern int isNTROrTWLBinaryTGDSMB7(FATFS * currentFH);
 
-extern struct XYTscPos first, tempPos;
-extern int vcount;
-extern bool GDBStarted;
+extern struct TGDSVideoFrameContext videoCtx;
+extern struct soundPlayerContext soundData;
 
-extern unsigned char *tx_queue[64],*rx_queue[64];
-extern unsigned int *rx_sizes,*tx_sizes;
-extern unsigned int *RIPC;
-extern void RIPC_Cmd(bool interupt);
+extern void playSoundStreamARM7();
+extern void handleARM7FSRender();
+
+extern bool stopSoundStreamUser();
+extern void playerStopARM7();
+
+#if defined(ARM7VRAMCUSTOMCORE)
+extern FATFS FatfsFILEBgMusic; //Sound stream handle
+extern FATFS FatfsFILESoundSample0; //Sound effect handle #0
+#endif
 
 #ifdef __cplusplus
 }
 #endif
-
-
-#define WIFI_REG(ofs) (*((volatile u16 *)(0x04800000+(ofs))))
-
-// make these accessable by both cores
-#define rx_count RIPC[16]
-#define rx_base RIPC[18]
-#define tx_base RIPC[19]
-
-#define WIFI_READY RIPC[20]
-
-#endif
-
