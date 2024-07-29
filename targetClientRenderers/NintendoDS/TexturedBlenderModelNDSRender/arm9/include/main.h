@@ -36,6 +36,7 @@ USA
 extern "C" {
 #endif
 
+extern u32 * getTGDSMBV3ARM7Bootloader();
 //TGDS Soundstreaming API
 extern int internalCodecType;
 extern struct fd * _FileHandleVideo; 
