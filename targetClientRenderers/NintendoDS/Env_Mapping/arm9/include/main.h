@@ -32,6 +32,7 @@ USA
 extern "C" {
 #endif
 
+extern u32 * getTGDSMBV3ARM7Bootloader();
 extern int main(int argc, char **argv);
 extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 extern bool fillNDSLoaderContext(char * filename);
