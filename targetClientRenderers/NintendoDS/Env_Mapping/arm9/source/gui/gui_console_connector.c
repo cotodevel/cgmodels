@@ -53,8 +53,6 @@ bool InitProjectSpecificConsole(){
 	DefaultSessionConsole = (ConsoleInstance *)(&DefaultConsole);
 	
 	//Set subEngine as TGDS Console
-	GUI.consoleAtTopScreen = false;
-	GUI.consoleBacklightOn = true;	//Backlight On for console
 	SetEngineConsole(subEngine,DefaultSessionConsole);
 	
 	//Set subEngine properties
@@ -101,6 +99,8 @@ bool InitProjectSpecificConsole(){
 	mainEngine = false;
 	setOrientation(ORIENTATION_0, mainEngine);
 	
+	GUI.GBAMacroMode = true;	//GUI console at top screen
+	TGDSLCDSwap();
 	return true;
 }
 
