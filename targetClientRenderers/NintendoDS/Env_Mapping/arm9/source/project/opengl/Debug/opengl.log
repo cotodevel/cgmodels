@@ -1,0 +1,43 @@
+﻿Build started 2/9/2025 8:03:23 PM.
+     1>Project "C:\Users\jp-dev\Desktop\lat\lat\cgmodels\targetClientRenderers\NintendoDS\Env_Mapping\arm9\source\project\opengl\opengl.vcxproj" on node 2 (Build target(s)).
+       Project file contains ToolsVersion="15.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /I..\src\glm /I"..\libs\libpng-1.6.37" /I"..\libs\SDL2_image-2.0.5" /I..\libs\SDL_ttf /I"..\libs\SDL2-2.0.14\include" /I..\glewglut\freeglut\include /I"..\libs\openal-soft-1.16.0-bin\include" /ZI /nologo /W3 /WX- /sdl /Od /Ob0 /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt ..\src\Scene.c
+         Scene.c
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(51): warning C4305: 'initializing' : truncation from 'double' to 'float'
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(463): warning C4305: 'function' : truncation from 'double' to 'GLclampf'
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(482): warning C4305: 'function' : truncation from 'double' to 'GLfloat'
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(700): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(701): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(702): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(704): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(705): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(706): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(709): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(710): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(711): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(755): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(756): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(757): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(759): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(760): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(761): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(764): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(765): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(766): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(807): warning C4244: 'function' : conversion from 'time_t' to 'unsigned int', possible loss of data
+     1>c:\users\jp-dev\desktop\lat\lat\cgmodels\targetclientrenderers\nintendods\env_mapping\arm9\source\project\src\scene.c(815): warning C4113: 'void (__cdecl *)()' differs in parameter lists from 'void (__cdecl *)(void)'
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\jp-dev\Desktop\lat\lat\cgmodels\targetClientRenderers\NintendoDS\Env_Mapping\arm9\source\project\Debug\TGDSPROJECT.exe" /INCREMENTAL /NOLOGO /LIBPATH:..\libs\libfreetype\objs /LIBPATH:"..\libs\SDL2_image-2.0.5\VisualC\Win32\Release" /LIBPATH:"..\libs\openal-soft-1.16.0-bin\libs\Win32" /LIBPATH:..\libs\SDL_ttf\VisualC\Win32\Release /LIBPATH:"..\libs\SDL2-2.0.14\VisualC\Win32\Release" /LIBPATH:"..\libs\libpng-1.6.37\projects\vstudio\Release" /LIBPATH:..\glewglut\freeglut\lib /LIBPATH:"..\glewglut\glew-1.11.0\lib" freeglut.lib glew32.lib libpng16.lib SDL2.lib SDL2_image.lib SDL2_ttf.lib OpenAL32.lib "libfreetype-6.lib" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\jp-dev\Desktop\lat\lat\cgmodels\targetClientRenderers\NintendoDS\Env_Mapping\arm9\source\project\Debug\TGDSPROJECT.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\jp-dev\Desktop\lat\lat\cgmodels\targetClientRenderers\NintendoDS\Env_Mapping\arm9\source\project\Debug\TGDSPROJECT.lib" /MACHINE:X86 Debug\ndsDisplayListUtils.obj
+         Debug\image_dxt.obj
+         Debug\image_helper.obj
+         Debug\main.obj
+         Debug\Scene.obj
+         Debug\soil.obj
+         Debug\stb_image_aug.obj
+         opengl.vcxproj -> C:\Users\jp-dev\Desktop\lat\lat\cgmodels\targetClientRenderers\NintendoDS\Env_Mapping\arm9\source\project\Debug\TGDSPROJECT.exe
+     1>Done Building Project "C:\Users\jp-dev\Desktop\lat\lat\cgmodels\targetClientRenderers\NintendoDS\Env_Mapping\arm9\source\project\opengl\opengl.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.43

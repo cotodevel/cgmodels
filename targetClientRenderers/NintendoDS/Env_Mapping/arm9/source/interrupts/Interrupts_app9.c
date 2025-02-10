@@ -20,14 +20,15 @@ USA
 
 #include "InterruptsARMCores_h.h"
 #include "ipcfifoTGDSUser.h"
+#include "consoleTGDS.h"
 #include "dsregs_asm.h"
 #include "main.h"
 #include "keypadTGDS.h"
-#include "interrupts.h"
-#include "utilsTGDS.h"
-#include "spifwTGDS.h"
-
-//User Handler Definitions
+#include "videoGL.h"
+#include "videoTGDS.h"
+#include "math.h"
+#include "imagepcx.h"
+#include "keypadTGDS.h"
 
 #ifdef ARM9
 __attribute__((section(".itcm")))
@@ -49,10 +50,21 @@ void Timer0handlerUser(){
 }
 
 #ifdef ARM9
+__attribute__((section(".dtcm")))
+#endif
+int msCounter = 0;
+
+#ifdef ARM9
+__attribute__((section(".dtcm")))
+#endif
+bool runGameTick = false;
+
+
+#ifdef ARM9
 __attribute__((section(".itcm")))
 #endif
 void Timer1handlerUser(){
-
+	
 }
 
 #ifdef ARM9
@@ -66,30 +78,33 @@ void Timer2handlerUser(){
 __attribute__((section(".itcm")))
 #endif
 void Timer3handlerUser(){
-
+	if(msCounter > 25){ //every 25ms scene runs
+		runGameTick = true;
+		msCounter = 0;	
+	}
+	msCounter++;
 }
 
 #ifdef ARM9
 __attribute__((section(".itcm")))
 #endif
 void HblankUser(){
-
+	
 }
 
 #ifdef ARM9
 __attribute__((section(".itcm")))
 #endif
-void VblankUser(){
-
+void VblankUser(){	
+	
 }
 
 #ifdef ARM9
 __attribute__((section(".itcm")))
 #endif
 void VcounterUser(){
-
+	
 }
-
 
 //Note: this event is hardware triggered from ARM7, on ARM9 a signal is raised through the FIFO hardware
 #ifdef ARM9

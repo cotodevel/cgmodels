@@ -23,36 +23,42 @@ USA
 
 #include "typedefsTGDS.h"
 #include "dsregs.h"
-#include "limitsTGDS.h"
-#include "dldi.h"
+#include "fatfslayerTGDS.h"
 #include "utilsTGDS.h"
 #include "videoGL.h"
+
+#define Texture_MetalCubeID ((int)0)
+
+//project 1 multimedia list
+#define videoIntro ((char*)"0:/sth1.tvs") //video intro
+
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern u32 * getTGDSMBV3ARM7Bootloader();
+extern u32 * getTGDSMBV3ARM7Bootloader(); //Required by ToolchainGenericDS-multiboot v3
+extern u32 * getTGDSMBV3ARM7Stage1(); //required by TGDS-mb v3's ARM7 @ 0x03800000
+
+extern void menuShow();
 extern int main(int argc, char **argv);
-extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
-extern bool fillNDSLoaderContext(char * filename);
-extern struct FileClassList * thisFileList;
+extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH];
+extern struct fd * _FileHandleVideo; 
+extern struct fd * _FileHandleAudio;
 
 //TGDS Soundstreaming API
 extern int internalCodecType;
 extern struct fd * _FileHandleVideo; 
 extern struct fd * _FileHandleAudio;
-extern void InitGL();
-
-extern GLint DLSPHERE;
-extern GLint DLEN2DTEX;
-extern GLint DLDIS2DTEX;
-extern GLint DLSOLIDCUBE05F;
-extern void setupTGDSProjectOpenGLDisplayLists();
-extern GLvoid ReSizeGLScene(GLsizei widthIn, GLsizei heightIn);
+extern bool stopSoundStreamUser();
+extern void closeSoundUser();
+extern bool get_pen_delta( int *dx, int *dy );	
+extern int pendPlay;
+extern struct task_Context * internalTGDSThreads;
+extern void onThreadOverflowUserCode(u32 * args);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

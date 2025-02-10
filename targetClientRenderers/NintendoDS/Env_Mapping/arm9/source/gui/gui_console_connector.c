@@ -22,6 +22,7 @@ USA
 #include "gui_console_connector.h"
 #include "consoleTGDS.h"
 #include "videoTGDS.h"
+#include "Scene.h"
 
 ////////[For custom Console implementation]:////////
 //You need to override :
@@ -42,71 +43,108 @@ USA
 
 
 //Definition that overrides the weaksymbol expected from toolchain to init console video subsystem
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
 vramSetup * getProjectSpecificVRAMSetup(){
-	return TGDSFOOBILLIARD_3DVRAM_SETUP();
+	struct Scene * Inst = &scene;
+	Inst->TGDSProjectDual3DEnabled = true; //false to enable TGDS Single 3D Screen + Console; true to enable TGDS Dual 3D Screen mode
+	if(Inst->TGDSProjectDual3DEnabled == false){
+		return TGDSFOOBILLIARD_3DVRAM_SETUP();
+	}
+	//Dual 3D Mode
+	return TGDSDUAL3D_VRAM_SETUP();
 }
 
 
 //2) Uses subEngine: VRAM Layout -> Console Setup
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
 bool InitProjectSpecificConsole(){
-	//TGDS Console defaults
-	DefaultSessionConsole = (ConsoleInstance *)(&DefaultConsole);
-	
-	//Set subEngine as TGDS Console
-	SetEngineConsole(subEngine,DefaultSessionConsole);
-	
-	//Set subEngine properties
-	DefaultSessionConsole->ConsoleEngineStatus.ENGINE_DISPCNT	=	(uint32)(MODE_5_2D | DISPLAY_BG3_ACTIVE );
-	
-	// BG3: FrameBuffer : 64(TILE:4) - 128 Kb
-	DefaultSessionConsole->ConsoleEngineStatus.EngineBGS[3].BGNUM = 3;
-	DefaultSessionConsole->ConsoleEngineStatus.EngineBGS[3].REGBGCNT = BG_BMP_BASE(4) | BG_BMP8_256x256 | BG_PRIORITY_1;
-	
-	GUI.DSFrameBuffer = (uint16 *)BG_BMP_RAM_SUB(4);
-	
-	GUI.Palette = &BG_PALETTE_SUB[0];
-	GUI.Palette[0] = 	RGB8(0,0,0);			//Back-ground tile color / Black
-	GUI.Palette[1] =	RGB8(255, 255, 255); 	//White
-	GUI.Palette[2] =  	RGB8(150, 75, 0); 		//Brown
-	GUI.Palette[3] =  	RGB8(255, 127, 0); 		//Orange
-	GUI.Palette[4] = 	RGB8(255, 0, 255); 		//Magenta
-	GUI.Palette[5] = 	RGB8(0, 255, 255); 		//Cyan
-	GUI.Palette[6] = 	RGB8(255, 255, 0); 		//Yellow
-	GUI.Palette[7] = 	RGB8(0, 0, 255); 		//Blue
-	GUI.Palette[8] = 	RGB8(0, 255, 0); 		//Green
-	GUI.Palette[9] = 	RGB8(255, 0, 0); 		//Red
-	GUI.Palette[0xa] = 	RGB8(128, 128, 128); 	//Grey
-	GUI.Palette[0xb] = 	RGB8(240, 240, 240);	//Light-Grey
-	
-	//Fill the Pallette
-	int i = 0;
-	for(i=0;i < (256 - 0xb); i++){
-		GUI.Palette[i + 0xc] = GUI.Palette[TGDSPrintfColor_White];
+	struct Scene * Inst = &scene;
+	if(Inst->TGDSProjectDual3DEnabled == false){
+		//TGDS Single 3D + Console layout
+		DefaultSessionConsole = (ConsoleInstance *)(&DefaultConsole);
+		
+		//Set subEngine as TGDS Console
+		SetEngineConsole(subEngine,DefaultSessionConsole);
+		
+		//Set subEngine properties
+		DefaultSessionConsole->ConsoleEngineStatus.ENGINE_DISPCNT	=	(uint32)(MODE_5_2D | DISPLAY_BG3_ACTIVE );
+		
+		// BG3: FrameBuffer : 64(TILE:4) - 128 Kb
+		DefaultSessionConsole->ConsoleEngineStatus.EngineBGS[3].BGNUM = 3;
+		DefaultSessionConsole->ConsoleEngineStatus.EngineBGS[3].REGBGCNT = BG_BMP_BASE(4) | BG_BMP8_256x256 | BG_PRIORITY_1;
+		
+		GUI.DSFrameBuffer = (uint16 *)BG_BMP_RAM_SUB(4);
+		
+		GUI.Palette = &BG_PALETTE_SUB[0];
+		GUI.Palette[0] = 	RGB8(0,0,0);			//Back-ground tile color / Black
+		GUI.Palette[1] =	RGB8(255, 255, 255); 	//White
+		GUI.Palette[2] =  	RGB8(150, 75, 0); 		//Brown
+		GUI.Palette[3] =  	RGB8(255, 127, 0); 		//Orange
+		GUI.Palette[4] = 	RGB8(255, 0, 255); 		//Magenta
+		GUI.Palette[5] = 	RGB8(0, 255, 255); 		//Cyan
+		GUI.Palette[6] = 	RGB8(255, 255, 0); 		//Yellow
+		GUI.Palette[7] = 	RGB8(0, 0, 255); 		//Blue
+		GUI.Palette[8] = 	RGB8(0, 255, 0); 		//Green
+		GUI.Palette[9] = 	RGB8(255, 0, 0); 		//Red
+		GUI.Palette[0xa] = 	RGB8(128, 128, 128); 	//Grey
+		GUI.Palette[0xb] = 	RGB8(240, 240, 240);	//Light-Grey
+		
+		//Fill the Pallette
+		int i = 0;
+		for(i=0;i < (256 - 0xb); i++){
+			GUI.Palette[i + 0xc] = GUI.Palette[TGDSPrintfColor_White];
+		}
+		
+		InitializeConsole(DefaultSessionConsole);
+		
+		REG_BG3X_SUB = 0;
+		REG_BG3Y_SUB = 0;
+		REG_BG3PA_SUB = 1 << 8;
+		REG_BG3PB_SUB = 0;
+		REG_BG3PC_SUB = 0;
+		REG_BG3PD_SUB = 1 << 8;
+		
+		bool mainEngine = true;
+		setOrientation(ORIENTATION_0, mainEngine);
+		mainEngine = false;
+		setOrientation(ORIENTATION_0, mainEngine);
+		
+		GUI.GBAMacroMode = true;	//GUI console at top screen
+		TGDSLCDSwap();
 	}
-	
-	InitializeConsole(DefaultSessionConsole);
-	
-	REG_BG3X_SUB = 0;
-	REG_BG3Y_SUB = 0;
-	REG_BG3PA_SUB = 1 << 8;
-	REG_BG3PB_SUB = 0;
-	REG_BG3PC_SUB = 0;
-	REG_BG3PD_SUB = 1 << 8;
-	
-	
-	bool mainEngine = true;
-	setOrientation(ORIENTATION_0, mainEngine);
-	mainEngine = false;
-	setOrientation(ORIENTATION_0, mainEngine);
-	
-	GUI.GBAMacroMode = true;	//GUI console at top screen
-	TGDSLCDSwap();
+
+	//Dual 3D Mode: TGDS Dual 3D Console init
+	else{
+		InitTGDSDual3DSpecificConsole();
+	}
 	return true;
 }
 
 
 //Definition that overrides the weaksymbol expected from toolchain to init console video subsystem
 //1) VRAM Layout
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
 vramSetup * TGDSFOOBILLIARD_3DVRAM_SETUP(){
 	
 	vramSetup * vramSetupInst = (vramSetup *)&vramSetupDefaultConsole;
