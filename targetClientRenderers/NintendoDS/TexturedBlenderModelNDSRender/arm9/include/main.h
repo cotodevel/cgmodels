@@ -27,6 +27,7 @@ USA
 #include "dldi.h"
 #include "utilsTGDS.h"
 #include "videoGL.h"
+#include "TGDS_threads.h"
 
 #define Texture_MetalCubeID ((int)0)
 #define Texture_WoodenCubeID ((int)1)
@@ -78,6 +79,10 @@ extern GLfloat boxcol[5][3];
 extern GLfloat topcol[5][3];
 extern float camMov;
 
+extern struct task_Context * internalTGDSThreads;
+extern void onThreadOverflowUserCode(u32 * args);
+
+extern u32 getGDBStubUserProcess();
 #ifdef __cplusplus
 }
 #endif

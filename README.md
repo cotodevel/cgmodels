@@ -14,6 +14,11 @@ Folder description:
 /models: Models themselves, the native format can be (.obj, .fbx, .dae, etc). 
 /targetClientRenderers: Are the engine software performing the model rendering
 
+-
+
+Note:
+targetClientRenderers/NintendoDS/Env_Mapping has a TGDSProject3D environment (https://bitbucket.org/Coto88/tgdsproject3d) if you want to use Visual Studio 2012 to develop.
+targetClientRenderers/NintendoDS/TexturedBlenderModelNDSRender does not have a TGDSProject3D environment, because it's drawing GX Display List code directly emitted from blender (non compatible with VS2012)
 
 Latest stable release:
 https://bitbucket.org/Coto88/cgmodels/get/TGDS1.65.zip

@@ -18,63 +18,89 @@ USA
 
 */
 
+
 //TGDS required version: IPC Version: 1.3
 
 //IPC FIFO Description: 
 //		struct sIPCSharedTGDS * TGDSIPC = TGDSIPCStartAddress; 														// Access to TGDS internal IPC FIFO structure. 		(ipcfifoTGDS.h)
 //		struct sIPCSharedTGDSSpecific * TGDSUSERIPC = (struct sIPCSharedTGDSSpecific *)TGDSIPCUserStartAddress;		// Access to TGDS Project (User) IPC FIFO structure	(ipcfifoTGDSUser.h)
 
-//inherits what is defined in: ipcfifoTGDS.h
 #ifndef __ipcfifoTGDSUser_h__
 #define __ipcfifoTGDSUser_h__
 
-#include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
 #include "ipcfifoTGDS.h"
+#include "utilsTGDS.h"
+#include "typedefsTGDS.h"
 
+#if defined(ARM7VRAMCUSTOMCORE)
+#include "pff.h"
+#include "ima_adpcm.h"
+#endif
 //---------------------------------------------------------------------------------
-typedef struct sIPCSharedTGDSSpecific{
+struct sIPCSharedTGDSSpecific {
 //---------------------------------------------------------------------------------
-	uint32 frameCounter7;	//VBLANK counter7
-	uint32 frameCounter9;	//VBLANK counter9
 	char filename[256];
-}  IPCSharedTGDSSpecific	__attribute__((aligned (4)));
+};
 
 //TGDS Memory Layout ARM7/ARM9 Cores
 #define TGDS_ARM7_MALLOCSTART (u32)(0x06018000)
-#define TGDS_ARM7_MALLOCSIZE (int)(16*1024)
-#define TGDSDLDI_ARM7_ADDRESS (u32)(TGDS_ARM7_MALLOCSTART + TGDS_ARM7_MALLOCSIZE)	//0x0601C000
-#define TGDS_ARM7_AUDIOBUFFER_STREAM (u32)(0x03800000)
-
-#define REQ_GBD_ARM7 (u32)(0xffff1988)
+#define TGDS_ARM7_MALLOCSIZE (int)(512)
+#define TGDSDLDI_ARM7_ADDRESS (u32)(TGDS_ARM7_MALLOCSTART + TGDS_ARM7_MALLOCSIZE) //ARM7DLDI: 16K
+#define TGDS_ARM7_AUDIOBUFFER_STREAM (u32)(0x06010000)	//Unused: 15K
 
 #define FIFO_PLAYSOUNDSTREAM_FILE (u32)(0xFFFFABCB)
 #define FIFO_STOPSOUNDSTREAM_FILE (u32)(0xFFFFABCC)
 #define FIFO_PLAYSOUNDEFFECT_FILE (u32)(0xFFFFABCD)
-#define workBufferSoundEffect0 (s16*)((int)0x06000000 + (96*1024) - (4096*4))
-#define NO_VIDEO_PLAYBACK	1
-
-#ifdef ARM9
-static inline void initGDBSession(){
-	SendFIFOWords((u32)REQ_GBD_ARM7, 0xFF);
-}
-#endif
+#define FIFO_STOP_ARM7_VRAM_CORE (u32)(0xFFFFABCE)
 
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+
+#ifdef ARM7
+#if defined(ARM7VRAMCUSTOMCORE)
+	extern IMA_Adpcm_Player backgroundMusicPlayer;	//Sound stream Background music Instance
+	extern FATFS fileHandle; //Sound stream handle
+#endif
 #endif
 
-extern struct sIPCSharedTGDSSpecific* getsIPCSharedTGDSSpecific();
+extern "C" {
+#endif
 
 //NOT weak symbols : the implementation of these is project-defined (here)
 extern void HandleFifoNotEmptyWeakRef(u32 cmd1, uint32 cmd2);
 extern void HandleFifoEmptyWeakRef(uint32 cmd1,uint32 cmd2);
+extern void setupLibUtils();
+extern struct sIPCSharedTGDSSpecific* getsIPCSharedTGDSSpecific();
 
-extern void EWRAMPrioToARM7();
-extern void EWRAMPrioToARM9();
+
+
+#if defined(ARM7VRAMCUSTOMCORE)
+
+#ifdef ARM7
+extern int main(int argc, char **argv);
+extern struct TGDSVideoFrameContext videoCtx;
+extern struct soundPlayerContext soundData;
+extern char fname[256];
+
+extern void playSoundStreamARM7();
+extern void handleARM7FSRender();
+
+extern bool stopSoundStreamUser();
+extern void playerStopARM7();
+#endif
+
+#endif
+
+#ifdef ARM9
+extern void initHardwareCustom(u8 DSHardware);
+extern u32 playSoundStreamFromFile(char * videoStructFDFilename, bool loop, u32 streamType);
+extern void BgMusic(char * filename);
+extern void BgMusicOff();
+extern void haltARM7();
+#endif
 
 #ifdef __cplusplus
 }

@@ -33,6 +33,7 @@ USA
 #include "soundTGDS.h"
 #include "timerTGDS.h"
 #include "InterruptsARMCores_h.h"
+#include "TGDS_threads.h"
 
 ////////////////////////////////TGDS-MB v3 VRAM Bootcode start////////////////////////////////
 
@@ -221,11 +222,12 @@ int main(int argc, char **argv) {
 	while(!(*(u8*)0x04000240 & 2) ){} //wait for VRAM_D block
 	ARM7InitDLDI(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, TGDSDLDI_ARM7_ADDRESS);
 	SendFIFOWords(FIFO_ARM7_RELOAD, 0xFF); //ARM7 Reload OK -> acknowledge ARM9
-    /*			TGDS 1.6 Standard ARM7 Init code end	*/
+    struct task_Context * TGDSThreads = getTGDSThreadSystem();
+	/*			TGDS 1.6 Standard ARM7 Init code end	*/
 	REG_IE|=(IRQ_VBLANK); //X button depends on this
 	while (1) {
-		handleARM7SVC();	/* Do not remove, handles TGDS services */
-		HaltUntilIRQ(); //Save power until next Vblank
+		bool waitForVblank = false;
+		int threadsRan = runThreads(TGDSThreads, waitForVblank);
 	}
 	return 0;
 }

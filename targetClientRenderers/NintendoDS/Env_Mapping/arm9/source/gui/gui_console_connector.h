@@ -47,7 +47,7 @@ USA
 extern "C" {
 #endif
 
-////////[Default Console implementation is selected, thus stubs are implemented here]////////
+////////[Custom Console implementation is selected, thus stubs are implemented here]////////
 
 //Definition that overrides the weaksymbol expected from toolchain to init console video subsystem
 extern vramSetup * getProjectSpecificVRAMSetup();
