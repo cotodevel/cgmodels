@@ -4,7 +4,7 @@ Install the dependencies in this folder.
 2)
 head to repo:
 
-https://bitbucket.org/Coto88/blender-nds-exporter/src/master/
+https://github.com/cotodevel/blender-nds-exporter/
 
 grab file nds_3d_export.py and copy it into:
 

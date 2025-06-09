@@ -2,7 +2,7 @@
 
 This is the Toolchain Generic TexturedBlenderModelNDSRender project:
 
-Compile Toolchain: To compile this project you will need to follow the steps at https://bitbucket.org/Coto88/toolchaingenericds : Then simply extract the project somewhere.
+Compile Toolchain: To compile this project you will need to follow the steps at https://github.com/cotodevel/toolchaingenericds : Then simply extract the project somewhere.
 
 Compile this project: Open msys, through msys commands head to the directory your extracted this project. Then write: make clean make
 
@@ -16,12 +16,15 @@ Source model format (like .blender) -> export to OBJ -> load textures -> NDS Cal
 
 Setup:
 1)
-https://bitbucket.org/Coto88/cgmodels/src/master/misc/blender2_49b_win8x64/
+https://github.com/cotodevel/cgmodels/tree/master/misc/blender2_49b_win8x64
+
 2)
-https://bitbucket.org/Coto88/blender-nds-exporter 
+https://github.com/cotodevel/blender-nds-exporter
+
 3)
 Build TGDS 
-https://bitbucket.org/Coto88/newlib-nds
+https://github.com/cotodevel/newlib-nds
+
 4)
 Build this TGDS Project
 make clean -> make
