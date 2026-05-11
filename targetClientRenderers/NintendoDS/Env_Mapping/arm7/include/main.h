@@ -50,7 +50,6 @@ extern "C" {
 
 #if defined(ARM7VRAMCUSTOMCORE)
 
-extern u8 * NDSHeaderStruct;
 extern char debugBuf7[256];
 extern struct addrList addresses[TGDS_MB_V3_ADDR_COUNT];
 extern int compare(const void* a, const void* b);

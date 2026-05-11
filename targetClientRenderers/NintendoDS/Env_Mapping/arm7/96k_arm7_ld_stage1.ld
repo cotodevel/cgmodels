@@ -8,7 +8,7 @@ ENTRY(_start)
 MEMORY {
 	ewram  : ORIGIN = 0x02380000, LENGTH = 96K
 	rom    : ORIGIN = 0x08000000, LENGTH = 32M
-	iwram  : ORIGIN = 0x037f8000, LENGTH = 96K
+	iwram  : ORIGIN = 0x06000000, LENGTH = 96K
 	
 	twl_ewram : ORIGIN = 0x02e80000, LENGTH = 512K - 64K
 	twl_iwram : ORIGIN = 0x03000000, LENGTH = 256K
