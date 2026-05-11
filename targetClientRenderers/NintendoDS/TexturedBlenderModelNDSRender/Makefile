@@ -40,7 +40,8 @@ export EXECUTABLE_VERSION =	"$(EXECUTABLE_VERSION_HEADER)"
 export TGDSPKG_TARGET_PATH := '//'
 export TGDSREMOTEBOOTER_SERVER_IP_ADDR := '192.168.43.185'
 export TGDSREMOTEBOOTER_SERVER_PORT := 1040
-#The ndstool I use requires to have the elf section removed, so these rules create elf headerless- binaries.
+export TGDS_PROJECT_COMPILER := clang
+
 export DIR_ARM7 = arm7
 export BUILD_ARM7	=	build
 export DIR_ARM9 = arm9
@@ -61,7 +62,7 @@ export BINSTRIP_RULE_COMPRESSED_9i :=	$(DECOMPRESSOR_BOOTCODE_9i).bin
 
 export TARGET_LIBRARY_CRT0_FILE_7 = nds_arm_ld_crt0
 export TARGET_LIBRARY_CRT0_FILE_9 = nds_arm_ld_crt0
-export TARGET_LIBRARY_CRT0_FILE_COMPRESSED_9 = nds_arm_ld_crt0
+export TARGET_LIBRARY_CRT0_FILE_COMPRESSED_9 = nds_arm_ld_crt0custom
 
 export TARGET_LIBRARY_LINKER_FILE_7 = $(TARGET_LIBRARY_PATH)$(TARGET_LIBRARY_LINKER_SRC)/$(TARGET_LIBRARY_CRT0_FILE_7).S
 export TARGET_LIBRARY_LINKER_FILE_9 = $(TARGET_LIBRARY_PATH)$(TARGET_LIBRARY_LINKER_SRC)/$(TARGET_LIBRARY_CRT0_FILE_9).S
@@ -112,7 +113,8 @@ export DIRS_ARM9_SRC = data/	\
 			source/project/src/	\
 			../common/	\
 			../common/templateCode/source/	\
-			../common/templateCode/data/arm9/	
+			../common/templateCode/data/arm9/	\
+			../$(PosIndCodeDIR_FILENAME)/$(DIR_ARM9)/include/
 			
 export DIRS_ARM9_HEADER = data/	\
 			build/	\
@@ -143,11 +145,9 @@ compile	:
 	-cp	-r	$(TARGET_LIBRARY_MAKEFILES_SRC7_NOFPIC)	$(CURDIR)/common/templateCode/stage1_7/
 	-cp	-r	$(TARGET_LIBRARY_MAKEFILES_SRC7VRAM_NOFPIC)	$(CURDIR)/$(DIR_ARM7)/Makefile
 	$(MAKE)	-R	-C	$(CURDIR)/common/templateCode/stage1_7/
-	$(MAKE)	-R	-C	$(DIR_ARM7)/
 	$(MAKE)	-R	-C	$(CURDIR)/common/templateCode/arm7bootldr/
-	
-	-mv $(DIR_ARM7)/arm7vram.bin	$(DIR_ARM9)/data/arm7vram.bin
-	-mv $(DIR_ARM7)/arm7vram_twl.bin	$(DIR_ARM9)/data/arm7vram_twl.bin
+	-mv $(CURDIR)/common/templateCode/arm7bootldr/arm7vram.bin	$(DIR_ARM9)/data/arm7vram.bin
+	-mv $(CURDIR)/common/templateCode/arm7bootldr/arm7vram_twl.bin	$(DIR_ARM9)/data/arm7vram_twl.bin
 	
 ifeq ($(SOURCE_MAKEFILE9),default)
 	cp	-r	$(TARGET_LIBRARY_MAKEFILES_SRC9_NOFPIC)	$(CURDIR)/$(DIR_ARM9)
@@ -170,7 +170,6 @@ $(EXECUTABLE_FNAME)	:	compile
 each_obj = $(foreach dirres,$(dir_read_arm9_files),$(dirres).)
 	
 clean:
-	$(MAKE)	clean	-C	$(DIR_ARM7)/
 	$(MAKE) clean	-C	$(PosIndCodeDIR_FILENAME)/$(DIR_ARM7)/
 	$(MAKE) clean	-C	$(CURDIR)/common/templateCode/arm7bootldr/
 #--------------------------------------------------------------------

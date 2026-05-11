@@ -46,23 +46,24 @@ USA
 #include "videoGL.h"
 #include "videoTGDS.h"
 #include "math.h"
-#include "16bpp.h" 
+#include "tga_16bpp.h" 
 #include "imagepcx.h"
 #include "Cube.h"
 #include "loader.h"
 #include "TGDS_threads.h"
 
-//ARM7 VRAM core
-#include "arm7vram.h"
-#include "arm7vram_twl.h"
+//TGDS-MB ARM7 Bootldr (embedded ARM7 VRAM core)
+#include "arm7bootldr.h"
+#include "arm7bootldr_twl.h"
 
 u32 * getTGDSMBV3ARM7Bootloader(){
 	if(__dsimode == false){
-		return (u32*)&arm7vram[0];	
+		swiDecompressLZSSWram((u8*)&arm7bootldr[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);
 	}
 	else{
-		return (u32*)&arm7vram_twl[0];
+		swiDecompressLZSSWram((u8*)&arm7bootldr_twl[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);
 	}
+	return (u32*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF;
 }
 
 struct task_Context * internalTGDSThreads = NULL;
@@ -174,19 +175,14 @@ void closeSoundUser(){
 int main(int argc, char **argv)   {
 	
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
+	
 	//Save Stage 1: IWRAM ARM7 payload: NTR/TWL (0x03800000)
 	memcpy((void *)TGDS_MB_V3_ARM7_STAGE1_ADDR, (const void *)0x02380000, (int)(96*1024));	//
 	coherent_user_range_by_size((uint32)TGDS_MB_V3_ARM7_STAGE1_ADDR, (int)(96*1024)); //		also for TWL binaries 
 	
 	//Execute Stage 2: VRAM ARM7 payload: NTR/TWL (0x06000000)
-	u32 * payload = NULL;
-	if(__dsimode == false){
-		payload = (u32*)&arm7vram[0];	
-	}
-	else{
-		payload = (u32*)&arm7vram_twl[0];
-	}
-	executeARM7Payload((u32)0x02380000, 96*1024, payload);
+	u32 * payload = getTGDSMBV3ARM7Bootloader();
+	//executeARM7Payload((u32)0x02380000, 96*1024, payload);
 	
 	bool isTGDSCustomConsole = false;	//set default console or custom console
 	GUI_init(isTGDSCustomConsole);
@@ -220,8 +216,9 @@ int main(int argc, char **argv)   {
 	if(__dsimode == true){
 		TWLSetTouchscreenTWLMode();
 	}
-	REG_IME = 1;
 	setupDisabledExceptionHandler();
+	REG_IME = 1;
+	
 	menuShow();
 	InitGL();
 	

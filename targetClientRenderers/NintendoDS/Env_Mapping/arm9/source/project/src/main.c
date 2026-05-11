@@ -48,30 +48,18 @@ USA
 #include "cafe.h"
 #include "loader.h"
 
-//TGDS-MB ARM7 Bootldr
-#include "arm7bootldr.h"
-#include "arm7bootldr_twl.h"
+//ARM7 VRAM core + TGDS-MB v3 Bootloader
+#include "arm7vram.h"
+#include "arm7vram_twl.h"
 
-//TGDS-MB ARM7 Stage 1
-#include "arm7_stage1.h"
-#include "arm7_stage1_twl.h"
-
-u32 * getTGDSMBV3ARM7Bootloader(){	//Required by ToolchainGenericDS-multiboot v3
+u32 * getTGDSARM7VRAMCore(){	//Required by ToolchainGenericDS-multiboot v3
 	if(__dsimode == false){
-		return (u32*)&arm7bootldr[0];	
+		swiDecompressLZSSWram((u8*)&arm7vram[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);
 	}
 	else{
-		return (u32*)&arm7bootldr_twl[0];
+		swiDecompressLZSSWram((u8*)&arm7vram_twl[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);
 	}
-}
-
-u32 * getTGDSMBV3ARM7Stage1(){	//required by TGDS-mb v3's ARM7 @ 0x03800000
-	if(__dsimode == false){
-		return (u32*)&arm7_stage1[0];	
-	}
-	else{
-		return (u32*)&arm7_stage1_twl[0];
-	}
+	return (u32*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF;
 }
 
 struct task_Context * internalTGDSThreads = NULL;
@@ -114,9 +102,14 @@ int main(int argc, char **argv)
 
 	#ifdef ARM9
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
+	
 	//Save Stage 1: IWRAM ARM7 payload: NTR/TWL (0x03800000)
-	memcpy((void *)TGDS_MB_V3_ARM7_STAGE1_ADDR, (const void *)getTGDSMBV3ARM7Stage1(), (int)(96*1024));
-	coherent_user_range_by_size((uint32)TGDS_MB_V3_ARM7_STAGE1_ADDR, (int)(96*1024));
+	memcpy((void *)TGDS_MB_V3_ARM7_STAGE1_ADDR, (const void *)0x02380000, (int)(96*1024));	//
+	coherent_user_range_by_size((uint32)TGDS_MB_V3_ARM7_STAGE1_ADDR, (int)(96*1024)); //		also for TWL binaries 	
+	
+	//Execute Stage 2: VRAM ARM7 payload: NTR/TWL (0x06000000)
+	u32 * payload = getTGDSARM7VRAMCore();
+	executeARM7Payload((u32)0x02380000, 96*1024, payload);
 	
 	//NTR mode requires ARM7DLDI layout set up before malloc setup
 	if(__dsimode == false){
@@ -157,6 +150,7 @@ int main(int argc, char **argv)
 	if(__dsimode == true){
 		TWLSetTouchscreenTWLMode();
 	}
+	setupDisabledExceptionHandler();
 	REG_IME = 1;
 	
 	setupDisabledExceptionHandler();
@@ -193,7 +187,7 @@ int main(int argc, char **argv)
 		strcpy(&thisArgv[0][0], TGDSPROJECTNAME);		//Arg0:	This Binary loaded
 		strcpy(&thisArgv[1][0], bootldr);				//Arg1:	NDS Binary reloaded
 		strcpy(&thisArgv[2][0], curChosenBrowseFile);	//Arg2: NDS Binary ARG0
-		u32 * payload = getTGDSMBV3ARM7Bootloader();
+		u32 * payload = getTGDSARM7VRAMCore();
 		if(TGDSMultibootRunNDSPayload(bootldr, (u8*)payload, 3, (char*)&thisArgv) == false){ //should never reach here, nor even return true. Should fail it returns false
 			printf("Invalid NDS/TWL Binary >%d", TGDSPrintfColor_Yellow);
 			printf("or you are in NTR mode trying to load a TWL binary. >%d", TGDSPrintfColor_Yellow);

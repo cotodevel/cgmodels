@@ -39,9 +39,7 @@ USA
 extern "C" {
 #endif
 
-extern u32 * getTGDSMBV3ARM7Bootloader(); //Required by ToolchainGenericDS-multiboot v3
-extern u32 * getTGDSMBV3ARM7Stage1(); //required by TGDS-mb v3's ARM7 @ 0x03800000
-
+extern u32 * getTGDSARM7VRAMCore(); //Required by ToolchainGenericDS-multiboot v3
 extern void menuShow();
 extern int main(int argc, char **argv);
 extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH];

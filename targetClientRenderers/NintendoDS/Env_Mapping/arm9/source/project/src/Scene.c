@@ -861,7 +861,7 @@ int startTGDSProject(int argc, char *argv[])
 			else{
 				bootldr = "0:/ToolchainGenericDS-multiboot.nds";
 			}
-			u32 * payload = getTGDSMBV3ARM7Bootloader();
+			u32 * payload = getTGDSARM7VRAMCore();
 			if(TGDSMultibootRunNDSPayload(bootldr, (u8*)payload, 0, (char*)&thisArgv) == false){ //should never reach here, nor even return true. Should fail it returns false
 				
 			}
